@@ -3,7 +3,7 @@
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ShoppingCart, Gift, ArrowRight } from "lucide-react";
+import { Users, ShoppingCart, Gift, ArrowRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Client, Sale } from "@/types"; // Assuming types are defined
