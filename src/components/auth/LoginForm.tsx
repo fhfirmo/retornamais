@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-// import { useRouter } from 'next/navigation'; // Uncomment if using App Router
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   email: z.string().email("Email inválido."),
@@ -25,7 +25,7 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const { toast } = useToast();
-  // const router = useRouter(); // Uncomment if using App Router for navigation
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,7 +43,7 @@ export function LoginForm() {
       description: "Redirecionando para o painel...",
     });
     // Simulate successful login and redirect
-    // router.push('/dashboard'); // Example redirection
+    router.push('/dashboard');
   }
 
   return (

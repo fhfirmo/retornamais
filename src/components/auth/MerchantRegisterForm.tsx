@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres."),
@@ -26,6 +27,8 @@ const formSchema = z.object({
 
 export function MerchantRegisterForm() {
   const { toast } = useToast();
+  const router = useRouter();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,7 +46,8 @@ export function MerchantRegisterForm() {
       title: "Cadastro realizado com sucesso!",
       description: "Você será redirecionado em breve.",
     });
-    // Add redirection logic here, e.g., router.push('/dashboard')
+    // Add redirection logic here
+    router.push('/dashboard');
   }
 
   return (
