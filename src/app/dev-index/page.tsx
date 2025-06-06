@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from "lucide-react"
 
 const appPages = [
-  { href: "/", label: "Página Inicial (Landing Page)" },
+  { href: "/", label: "Página Inicial (Landing Page Original)" },
   { href: "/auth/login", label: "Login do Comerciante" },
   { href: "/auth/merchant/register", label: "Cadastro de Comerciante" },
   { href: "/dashboard", label: "Painel Principal (Dashboard)" },
@@ -24,7 +24,7 @@ export default function DevIndexPage() {
         <CardHeader>
           <div className="flex items-center gap-3 mb-2">
             <List className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl font-headline">Índice de Páginas</CardTitle>
+            <CardTitle className="text-3xl font-headline">Páginas Criadas</CardTitle>
           </div>
           <CardDescription>
             Use esta página para navegar e validar todas as telas da aplicação Retorna+ Web.
@@ -36,7 +36,7 @@ export default function DevIndexPage() {
             <AlertTitle className="font-bold">Atenção Desenvolvedor!</AlertTitle>
             <AlertDescription>
               Esta página é apenas para fins de desenvolvimento e validação.
-              Lembre-se de removê-la antes de implantar a versão final da aplicação ou integrá-la com o backend.
+              Lembre-se de removê-la ou reverter a página inicial antes de implantar a versão final da aplicação ou integrá-la com o backend.
             </AlertDescription>
           </Alert>
 
