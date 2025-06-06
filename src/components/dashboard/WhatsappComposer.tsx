@@ -115,8 +115,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
       const whatsappUrl = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${text}`;
       window.open(whatsappUrl, "_blank");
     }
-  };
-
+  }
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
