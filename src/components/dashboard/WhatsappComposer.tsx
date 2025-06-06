@@ -21,11 +21,11 @@ import { Loader2, Copy, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Client } from "@/types";
 import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/constants";
-import { generateWhatsappMessageAction } from "@/lib/actions"; // Server Action
+import { generateWhatsappMessageAction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  clientId: z.string().optional(), // Optional: user can input details manually
+  clientId: z.string().optional(),
   clientName: z.string().min(1, "Nome do cliente é obrigatório."),
   phoneNumber: z.string().min(10, "Número de telefone inválido."),
   purchaseValue: z.coerce.number().positive("Valor da compra deve ser positivo."),
@@ -37,8 +37,8 @@ const formSchema = z.object({
 type WhatsappFormValues = z.infer<typeof formSchema>;
 
 interface WhatsappComposerProps {
-  clients: Client[]; // To populate dropdown and auto-fill
-  initialClient?: Client | null; // Pre-select a client
+  clients: Client[];
+  initialClient?: Client | null;
 }
 
 export function WhatsappComposer({ clients, initialClient }: WhatsappComposerProps) {
@@ -65,7 +65,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
         clientId: initialClient.id,
         clientName: initialClient.name,
         phoneNumber: initialClient.phone,
-        purchaseValue: 0, // Purchase value should be new
+        purchaseValue: 0,
         accumulatedCashback: initialClient.accumulatedCashback,
         currentBalance: initialClient.currentBalance,
         template: DEFAULT_WHATSAPP_TEMPLATE,
@@ -76,6 +76,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
   const handleClientSelection = (clientId: string) => {
     const selectedClient = clients.find(c => c.id === clientId);
     if (selectedClient) {
+      form.setValue("clientId", selectedClient.id); // Also set clientId in the form
       form.setValue("clientName", selectedClient.name);
       form.setValue("phoneNumber", selectedClient.phone);
       form.setValue("accumulatedCashback", selectedClient.accumulatedCashback);
@@ -110,9 +111,8 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
   
   const openWhatsApp = () => {
     if (generatedMessage && form.getValues("phoneNumber")) {
-      const phone = form.getValues("phoneNumber").replace(/\D/g, ''); // Remove non-digits
+      const phone = form.getValues("phoneNumber").replace(/\D/g, '');
       const text = encodeURIComponent(generatedMessage);
-      // Basic check for international format, assuming BR for now
       const whatsappUrl = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${text}`;
       window.open(whatsappUrl, "_blank");
     }
@@ -207,7 +207,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
                     </FormControl>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
-                      Use: {"{{{clientName}}}, {{{purchaseValue}}}, {{{accumulatedCashback}}}, {{{currentBalance}}}"
+                      Use: {"{{{clientName}}}, {{{purchaseValue}}}, {{{accumulatedCashback}}}, {{{currentBalance}}}"}
                     </p>
                   </FormItem>
                 )}
@@ -221,7 +221,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg sticky top-20"> {/* Sticky for better UX on scroll */}
+      <Card className="shadow-lg sticky top-20">
         <CardHeader>
           <CardTitle className="font-headline">Mensagem Gerada</CardTitle>
           <CardDescription>Revise a mensagem antes de enviar.</CardDescription>
