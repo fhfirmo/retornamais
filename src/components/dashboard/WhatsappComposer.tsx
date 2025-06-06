@@ -1,7 +1,8 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,7 +81,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
       form.setValue("accumulatedCashback", selectedClient.accumulatedCashback);
       form.setValue("currentBalance", selectedClient.currentBalance);
     }
-  };
+  }
 
   async function onSubmit(values: WhatsappFormValues) {
     setIsLoading(true);
@@ -105,7 +106,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
       navigator.clipboard.writeText(generatedMessage);
       toast({ title: "Mensagem Copiada!", description: "A mensagem foi copiada para a área de transferência." });
     }
-  };
+  }
   
   const openWhatsApp = () => {
     if (generatedMessage && form.getValues("phoneNumber")) {
