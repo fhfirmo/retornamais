@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Image as ImageIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { Image as ImageIcon, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromoImageAction } from '@/lib/actions';
 import Image from 'next/image'; // For displaying the generated image
@@ -51,7 +51,7 @@ export function PromoImageGenerator() {
     <Card className="shadow-md">
       <CardHeader>
         <CardTitle className="font-headline flex items-center">
-          <ImageIcon className="mr-2 h-6 w-6 text-primary" />
+          <Sparkles className="mr-2 h-6 w-6 text-primary" /> {/* Changed Icon */}
           Gerador de Imagem Promocional (IA)
         </CardTitle>
         <CardDescription>
@@ -73,7 +73,7 @@ export function PromoImageGenerator() {
               className="min-h-[80px]"
             />
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button type="submit" disabled={isLoading || !prompt.trim()} className="w-full">
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -83,46 +83,48 @@ export function PromoImageGenerator() {
           </Button>
         </form>
 
-        {isLoading && (
-          <div className="mt-6 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg min-h-[200px]">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-3" />
-            <p className="text-muted-foreground">Gerando sua imagem, aguarde...</p>
-          </div>
-        )}
-
-        {error && !isLoading && (
-          <div className="mt-6 p-4 bg-destructive/10 border border-destructive/30 rounded-md text-destructive flex items-center gap-3">
-            <AlertTriangle className="h-6 w-6" />
-            <div>
-                <p className="font-semibold">Erro ao gerar imagem:</p>
-                <p className="text-sm">{error}</p>
+        <div className="mt-6 border-2 border-dashed rounded-lg min-h-[250px] flex items-center justify-center p-4 bg-muted/20 relative aspect-video">
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-3" />
+              <p className="text-muted-foreground">Gerando sua imagem, aguarde um momento...</p>
+              <p className="text-xs text-muted-foreground">(Isso pode levar alguns segundos)</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {generatedImageUri && !isLoading && !error && (
-          <div className="mt-6 space-y-3">
-            <h3 className="text-lg font-semibold font-headline">Imagem Gerada:</h3>
-            <div className="border rounded-lg overflow-hidden aspect-video relative bg-muted">
+          {error && !isLoading && (
+            <div className="text-destructive text-center p-4">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-70" />
+              <p className="font-semibold">Erro ao gerar imagem:</p>
+              <p className="text-sm">{error}</p>
+              <p className="text-xs mt-2">Tente refinar seu prompt ou tente novamente mais tarde.</p>
+            </div>
+          )}
+
+          {generatedImageUri && !isLoading && !error && (
+            <>
               <Image
                 src={generatedImageUri}
                 alt={`Imagem promocional gerada para: ${prompt}`}
                 layout="fill"
                 objectFit="contain"
                 data-ai-hint="generated promotion"
+                className="rounded-md"
               />
+               <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-background/80 bg-foreground/70 px-2 py-0.5 rounded">
+                  Imagem gerada por IA
+              </p>
+            </>
+          )}
+
+          {!isLoading && !error && !generatedImageUri && (
+            <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
+              <ImageIcon className="h-16 w-16 opacity-30 mb-3" />
+              <p>Sua imagem promocional aparecerá aqui.</p>
+              <p className="text-xs">Digite uma descrição acima e clique em "Gerar Imagem".</p>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-                Esta é uma imagem gerada por IA e pode não ser perfeita. Use como inspiração.
-            </p>
-          </div>
-        )}
-         {!generatedImageUri && !isLoading && !error && (
-            <div className="mt-6 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg min-h-[200px] bg-muted/30">
-                <ImageIcon className="h-12 w-12 text-muted-foreground mb-3 opacity-50" />
-                <p className="text-muted-foreground text-center">Sua imagem aparecerá aqui após a geração.</p>
-            </div>
-         )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );

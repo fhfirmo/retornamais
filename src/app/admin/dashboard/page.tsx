@@ -5,10 +5,10 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building, Users, ShoppingCart, Gift, BarChart3, CalendarCheck2, UserPlus, CheckCircle2, BarChartHorizontalBig, Filter, PieChart, TrendingUp, Settings } from "lucide-react"; // Changed SettingsIcon to Settings
+import { Building, Users, ShoppingCart, Gift, BarChart3, CalendarCheck2, UserPlus, CheckCircle2, Filter, PieChart, TrendingUp, Settings, ShieldAlert } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { getAdminDashboardStats, initialMerchants, initialGlobalClients, initialGlobalSales } from "@/lib/mockData"; // Import from centralized mock data
-import type { AdminDashboardStats } from "@/types";
+import { getAdminDashboardStats, initialMerchants, initialGlobalClients, initialGlobalSales, initialSystemUsers, merchantNames } from "@/lib/mockData"; // Import from centralized mock data
+import type { AdminDashboardStats, UserAccount } from "@/types";
 import {
   ChartContainer,
   ChartTooltip,
@@ -17,6 +17,16 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, Cell } from "recharts"
+import { useRouter } from "next/navigation"; // Import useRouter
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { UserAdminForm } from "@/components/forms/UserAdminForm";
+import { useToast } from "@/hooks/use-toast";
 
 
 const chartDataSalesByMonth = [
@@ -29,7 +39,7 @@ const chartDataSalesByMonth = [
 ];
 
 const chartDataClientsByMerchant = initialMerchants.map(merchant => ({
-  name: merchant.name,
+  name: merchantNames[merchant.id] || merchant.name, // Use merchantNames for display
   value: initialGlobalClients.filter(client => client.merchantId === merchant.id).length,
 }));
 
@@ -38,14 +48,44 @@ const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats>(getAdminDashboardStats());
+  const router = useRouter(); // Initialize useRouter
+  const { toast } = useToast();
+  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  // We won't be editing users from here, just adding.
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+
 
   useEffect(() => {
     setStats(getAdminDashboardStats());
   }, []);
 
+  const handleQuickAddUser = () => {
+    setEditingUser(null); // Ensure it's for adding a new user
+    setIsUserFormOpen(true);
+  };
+
+  const handleUserFormSubmit = (values: any, userId?: string) => {
+    // This is a simplified version for adding from dashboard.
+    // In a real app, this might involve more complex state management or API calls.
+    if (!userId) { // Adding new user
+      const newUser: UserAccount = {
+        id: crypto.randomUUID(),
+        ...values,
+      };
+      // Simulate adding to a global list if needed for other parts of prototype
+      initialSystemUsers.unshift(newUser); // Add to the beginning of the mock data array
+      console.log("New user added via dashboard quick action:", newUser);
+      toast({ title: "Usuário Adicionado!", description: `${values.name} foi cadastrado com sucesso (simulação).` });
+    }
+    setIsUserFormOpen(false);
+  };
+
+
   return (
     <div className="space-y-6 md:space-y-8">
-      <h1 className="text-3xl font-headline font-bold">Painel do Administrador</h1>
+      <h1 className="text-3xl font-headline font-bold flex items-center">
+        <ShieldAlert className="mr-2 h-8 w-8 text-primary" /> Painel do Administrador
+      </h1>
       <p className="text-muted-foreground">Visão geral do sistema Retorna+.</p>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -99,7 +139,7 @@ export default function AdminDashboardPage() {
               <BarChart accessibilityLayer data={chartDataSalesByMonth} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={10} domain={[0, 'dataMax + 500']} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
               </BarChart>
@@ -135,7 +175,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-      
+
        <Card className="shadow-sm">
         <CardHeader>
             <CardTitle className="font-headline flex items-center">
@@ -158,21 +198,40 @@ export default function AdminDashboardPage() {
             <CardDescription>Links para ações administrativas comuns.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-             <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => alert("Placeholder: Ir para cadastro de comerciante")}>
-                <UserPlus className="mr-2 h-5 w-5 text-secondary" /> Cadastrar Novo Comerciante
+             <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => router.push("/admin/merchants")}>
+                <Building className="mr-2 h-5 w-5 text-primary" /> Gerenciar Comerciantes
+             </Button>
+             <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={handleQuickAddUser}>
+                <UserPlus className="mr-2 h-5 w-5 text-secondary" /> Cadastrar Novo Usuário
              </Button>
              <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => alert("Placeholder: Ir para aprovações pendentes")}>
-                <CheckCircle2 className="mr-2 h-5 w-5 text-green-500" /> Aprovar Cadastros Pendentes
+                <CheckCircle2 className="mr-2 h-5 w-5 text-green-500" /> Aprovações Pendentes
              </Button>
-             <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => alert("Placeholder: Ir para gerenciamento de usuários do sistema")}>
+             <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => router.push("/admin/users")}>
                 <Users className="mr-2 h-5 w-5 text-accent" /> Gerenciar Usuários do Sistema
              </Button>
               <Button variant="outline" className="w-full justify-start py-6 text-base" onClick={() => alert("Placeholder: Ir para configurações globais do sistema")}>
-                <Settings className="mr-2 h-5 w-5 text-primary" /> Configurações Globais 
+                <Settings className="mr-2 h-5 w-5 text-primary" /> Configurações Globais
              </Button>
           </CardContent>
         </Card>
+
+        <Dialog open={isUserFormOpen} onOpenChange={setIsUserFormOpen}>
+            <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle className="font-headline text-xl">Adicionar Novo Usuário (Ação Rápida)</DialogTitle>
+                <DialogDescription>
+                Preencha os dados para cadastrar um novo usuário no sistema.
+                </DialogDescription>
+            </DialogHeader>
+            <UserAdminForm
+                user={null} // Always for new user from dashboard
+                onSubmit={handleUserFormSubmit}
+                onCancel={() => setIsUserFormOpen(false)}
+                isEditing={false}
+            />
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
-
