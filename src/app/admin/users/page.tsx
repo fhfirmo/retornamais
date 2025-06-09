@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
               </Table>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">Nenhum usuário encontrado.</p>
+            <p className="text-muted-foreground text-center py-8">Nenhum usuário encontrado com os filtros atuais.</p>
           )}
         </CardContent>
       </Card>

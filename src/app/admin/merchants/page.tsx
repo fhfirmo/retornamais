@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,36 +14,82 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { MerchantUser } from "@/types";
 import Link from "next/link";
-import { initialMerchants } from "@/lib/mockData"; // Import from centralized mock data
+import { initialMerchants } from "@/lib/mockData";
+import { MerchantAdminForm } from "@/components/forms/MerchantAdminForm";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminMerchantsPage() {
   const [merchants, setMerchants] = useState<MerchantUser[]>(initialMerchants);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingMerchant, setEditingMerchant] = useState<MerchantUser | null>(null);
+  const [merchantToDelete, setMerchantToDelete] = useState<MerchantUser | null>(null);
+  const { toast } = useToast();
 
-  const filteredMerchants = merchants.filter(merchant =>
-    merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    merchant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    merchant.cnpjCpf.includes(searchTerm)
-  );
+  const filteredMerchants = useMemo(() => {
+    return merchants.filter(merchant =>
+      merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      merchant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      merchant.cnpjCpf.includes(searchTerm)
+    );
+  }, [merchants, searchTerm]);
 
-  const handleAddMerchant = () => {
-    console.log("Add new merchant clicked");
-    alert("Funcionalidade de adicionar comerciante (Admin) - Placeholder. Redirecionaria para /auth/merchant/register ou um formulário modal.");
-    // router.push('/auth/merchant/register?byAdmin=true'); // Example
+  const handleOpenForm = (merchant?: MerchantUser) => {
+    setEditingMerchant(merchant || null);
+    setIsFormOpen(true);
   };
 
-  const handleEditMerchant = (merchant: MerchantUser) => {
-    console.log("Edit merchant:", merchant);
-    alert(`Editar comerciante: ${merchant.name} (Admin) - Placeholder`);
+  const handleFormSubmit = (values: Omit<MerchantUser, 'id' | 'role'>, merchantId?: string) => {
+    if (merchantId) { // Editing existing merchant
+      setMerchants(prevMerchants =>
+        prevMerchants.map(m =>
+          m.id === merchantId ? { ...m, ...values } : m
+        )
+      );
+      toast({ title: "Comerciante Atualizado!", description: `Os dados de ${values.name} foram atualizados.` });
+    } else { // Adding new merchant
+      const newMerchant: MerchantUser = {
+        id: crypto.randomUUID(),
+        ...values,
+        role: "merchant", // Default role
+      };
+      setMerchants(prevMerchants => [newMerchant, ...prevMerchants]);
+      toast({ title: "Comerciante Adicionado!", description: `${values.name} foi cadastrado com sucesso.` });
+    }
+    setIsFormOpen(false);
+    setEditingMerchant(null);
   };
 
-  const handleDeleteMerchant = (merchantId: string) => {
-    console.log("Delete merchant ID:", merchantId);
-     if(confirm("Tem certeza que deseja excluir este comerciante? Todos os seus dados (clientes, vendas) serão afetados.")) {
-        setMerchants(merchants.filter(m => m.id !== merchantId));
-        alert("Comerciante excluído (simulação).");
+  const handleDeleteRequest = (merchant: MerchantUser) => {
+    setMerchantToDelete(merchant);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (merchantToDelete) {
+      setMerchants(prevMerchants => prevMerchants.filter(m => m.id !== merchantToDelete.id));
+      toast({ title: "Comerciante Excluído!", description: `${merchantToDelete.name} foi excluído.` });
+      setMerchantToDelete(null);
     }
   };
 
@@ -57,7 +103,7 @@ export default function AdminMerchantsPage() {
           </h1>
           <p className="text-muted-foreground">Adicione, edite e visualize os comerciantes da plataforma.</p>
         </div>
-        <Button onClick={handleAddMerchant}>
+        <Button onClick={() => handleOpenForm()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Novo Comerciante
         </Button>
       </div>
@@ -94,18 +140,17 @@ export default function AdminMerchantsPage() {
                       <TableCell className="font-medium">{merchant.name}</TableCell>
                       <TableCell>{merchant.email}</TableCell>
                       <TableCell>{merchant.cnpjCpf}</TableCell>
-                      <TableCell className="text-center space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditMerchant(merchant)} title="Editar Comerciante">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteMerchant(merchant.id)} title="Excluir Comerciante">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                         <Button variant="ghost" size="icon" asChild title="Ver Painel do Comerciante (simulação)">
-                          {/* This link is illustrative, actual merchantId might differ from user.id for merchantUser */}
-                          <Link href={`/dashboard?merchantUserId=${merchant.id}`}> 
+                      <TableCell className="text-center space-x-1">
+                         <Button variant="ghost" size="icon" asChild title="Ver Detalhes do Comerciante">
+                          <Link href={`/admin/merchants/${merchant.id}`}> 
                             <Eye className="h-4 w-4 text-blue-500" />
                           </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenForm(merchant)} title="Editar Comerciante">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRequest(merchant)} title="Excluir Comerciante">
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -114,10 +159,45 @@ export default function AdminMerchantsPage() {
               </Table>
             </div>
           ) : (
-             <p className="text-muted-foreground text-center py-8">Nenhum comerciante encontrado.</p>
+             <p className="text-muted-foreground text-center py-8">Nenhum comerciante encontrado com os filtros atuais.</p>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-xl">
+              {editingMerchant ? "Editar Comerciante" : "Adicionar Novo Comerciante"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingMerchant ? "Modifique os dados do comerciante abaixo." : "Preencha os dados para cadastrar um novo comerciante."}
+            </DialogDescription>
+          </DialogHeader>
+          <MerchantAdminForm
+            merchant={editingMerchant}
+            onSubmit={handleFormSubmit}
+            onCancel={() => setIsFormOpen(false)}
+            isEditing={!!editingMerchant}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!merchantToDelete} onOpenChange={() => setMerchantToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o comerciante "{merchantToDelete?.name}"? Esta ação não pode ser desfeita e pode afetar dados associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CardDescription className="text-xs text-muted-foreground">
         Comerciantes também podem se cadastrar pela página inicial ou página de cadastro de comerciante.
       </CardDescription>

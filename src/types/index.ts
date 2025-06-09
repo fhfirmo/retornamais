@@ -57,3 +57,11 @@ export interface User {
   name: string;
   email: string;
 }
+
+export interface AdminDashboardStats {
+  totalMerchants: number;
+  totalPlatformClients: number;
+  totalPlatformSales: number;
+  totalPlatformCashback: number;
+  activeCampaigns: number;
+}

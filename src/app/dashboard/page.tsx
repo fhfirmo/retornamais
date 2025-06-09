@@ -4,12 +4,13 @@
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ShoppingCart, Gift, ArrowRight, MessageSquare, TrendingDown } from "lucide-react";
+import { Users, ShoppingCart, Gift, ArrowRight, MessageSquare, TrendingDown, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Client, Sale } from "@/types"; 
 import React, { useState, useEffect } from "react";
 import { mockMerchantClients, mockMerchantSales } from "@/lib/mockData"; // Import from centralized mock data
+import { PromoImageGenerator } from "@/components/dashboard/PromoImageGenerator"; // Import the new component
 
 export default function DashboardPage() {
   const [totalClients, setTotalClients] = useState(0);
@@ -64,7 +65,7 @@ export default function DashboardPage() {
         <StatCard
           title="Cashback Resgatado"
           value={`R$ ${totalCashbackRedeemed.toFixed(2)}`}
-          icon={TrendingDown} // Icon changed to TrendingDown
+          icon={TrendingDown} 
           description="Cashback utilizado pelos clientes"
           colorClass="text-green-500"
         />
@@ -124,6 +125,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PromoImageGenerator />
 
        <Card className="shadow-sm overflow-hidden">
         <CardHeader>

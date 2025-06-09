@@ -42,7 +42,7 @@ export default function AdminClientsPage() {
   const handleDeleteClient = (clientId: string) => {
     console.log("Delete client ID (Admin):", clientId);
      if(confirm("Tem certeza que deseja excluir este cliente globalmente? Isso pode afetar dados de um comerciante.")) {
-        setClients(clients.filter(c => c.id !== clientId));
+        setClients(prevClients => prevClients.filter(c => c.id !== clientId));
         alert("Cliente excluído globalmente (simulação).");
     }
   };
@@ -71,7 +71,6 @@ export default function AdminClientsPage() {
                 className="pl-10 w-full"
                 />
             </div>
-            {/* Basic filter by merchant for demonstration */}
             <Input 
               type="text"
               placeholder="Filtrar por ID do Comerciante (ex: merch1)"

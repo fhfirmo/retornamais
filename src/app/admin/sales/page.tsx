@@ -43,7 +43,7 @@ export default function AdminSalesPage() {
   const handleDeleteSale = (saleId: string) => {
     console.log("Delete sale ID (Admin):", saleId);
     if(confirm("Tem certeza que deseja excluir esta venda globalmente? Isso pode afetar dados de um comerciante.")) {
-        setSales(sales.filter(s => s.id !== saleId));
+        setSales(prevSales => prevSales.filter(s => s.id !== saleId));
         alert("Venda excluída globalmente (simulação).");
     }
   };

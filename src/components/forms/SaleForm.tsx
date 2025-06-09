@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,17 +11,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Client, Sale, MerchantSettings } from "@/types"; // Ensure MerchantSettings is imported
+import type { Client, Sale, MerchantSettings, Campaign } from "@/types"; // Ensure MerchantSettings is imported
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React from "react";
 
 const formSchema = z.object({
   clientId: z.string().min(1, "Selecione um cliente."),
@@ -39,6 +41,8 @@ interface SaleFormProps {
 
 export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormProps) {
   const { toast } = useToast();
+  const [activeCampaignMessage, setActiveCampaignMessage] = React.useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,6 +52,27 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
     },
   });
 
+  React.useEffect(() => {
+    // Check for active campaigns when component mounts or settings change
+    const today = new Date();
+    const activeCampaign = settings.campaigns?.find(
+      c => {
+        const startDate = new Date(c.startDate);
+        const endDate = new Date(c.endDate);
+        startDate.setHours(0,0,0,0);
+        endDate.setHours(23,59,59,999);
+        return c.isActive && startDate <= today && endDate >= today;
+      }
+    );
+
+    if (activeCampaign) {
+      setActiveCampaignMessage(`Campanha "${activeCampaign.name}" ativa! Cashback será multiplicado por ${activeCampaign.cashbackMultiplier}x.`);
+    } else {
+      setActiveCampaignMessage(null);
+    }
+  }, [settings.campaigns]);
+
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     const client = clients.find(c => c.id === values.clientId);
     if (!client) {
@@ -55,19 +80,25 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
       return;
     }
 
-    // Determine cashback percentage: check active campaigns first, then default.
-    // This is a simplified mock. Real campaign logic would be more complex and likely backend-driven.
     let effectiveCashbackPercentage = settings.cashbackPercentage;
-    const today = new Date().toISOString();
+    const today = new Date();
     const activeCampaign = settings.campaigns?.find(
-      c => new Date(c.startDate) <= new Date(today) && new Date(c.endDate) >= new Date(today) && c.isActive !== false
+      c => {
+        const startDate = new Date(c.startDate);
+        const endDate = new Date(c.endDate);
+        startDate.setHours(0,0,0,0);
+        endDate.setHours(23,59,59,999);
+        return c.isActive && startDate <= today && endDate >= today;
+      }
     );
 
+    let campaignToastMessage: string | null = null;
     if (activeCampaign) {
       effectiveCashbackPercentage *= activeCampaign.cashbackMultiplier;
-      toast({ 
+      campaignToastMessage = `Cashback multiplicado por ${activeCampaign.cashbackMultiplier}x devido à campanha "${activeCampaign.name}".`;
+       toast({ 
         title: "Campanha Ativa!", 
-        description: `Cashback multiplicado por ${activeCampaign.cashbackMultiplier}x devido à campanha "${activeCampaign.name}".`,
+        description: campaignToastMessage,
         variant: "default",
         className: "bg-yellow-100 border-yellow-400 text-yellow-700"
       });
@@ -90,9 +121,6 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
       currentBalance: (client.currentBalance || 0) + cashbackGenerated,
     };
     
-    console.log("Sale data:", newOrUpdatedSale);
-    console.log("Updated client:", updatedClient);
-
     toast({
       title: sale ? "Venda atualizada!" : "Venda registrada!",
       description: `Venda de R$ ${values.value.toFixed(2)} para ${client.name} ${sale ? 'atualizada' : 'registrada'}. Cashback: R$ ${cashbackGenerated.toFixed(2)}`,
@@ -101,7 +129,6 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
     if (onSubmitSuccess) {
       onSubmitSuccess(newOrUpdatedSale, updatedClient);
     }
-    // Don't reset if editing, only for new sale
     if (!sale) {
        form.reset({ clientId: "", value: 0, date: new Date() });
     }
@@ -183,6 +210,15 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
             </FormItem>
           )}
         />
+        {activeCampaignMessage && (
+          <Alert variant="default" className="bg-secondary/20 border-secondary text-secondary-foreground [&>svg]:text-secondary">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Campanha Ativa!</AlertTitle>
+            <AlertDescription>
+              {activeCampaignMessage}
+            </AlertDescription>
+          </Alert>
+        )}
         <Button type="submit" className="w-full md:w-auto">
           {sale ? "Salvar Alterações" : "Registrar Venda"}
         </Button>
