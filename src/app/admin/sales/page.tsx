@@ -18,23 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Sale } from "@/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-// Mock Data - Representing sales from potentially different merchants
-const initialGlobalSales: Sale[] = [
-  { id: "s1", merchantId: "merch1", clientId: "c1", clientName: "Ana Silva", value: 100, date: new Date(2023, 10, 15).toISOString(), cashbackGenerated: 5 },
-  { id: "s2", merchantId: "merch2", clientId: "c2", clientName: "Bruno Costa", value: 250, date: new Date(2023, 10, 16).toISOString(), cashbackGenerated: 12.5 },
-  { id: "s3", merchantId: "merch1", clientId: "c3", clientName: "Carlos Dias", value: 75, date: new Date(2023, 11, 1).toISOString(), cashbackGenerated: 3.75 },
-  { id: "s4", merchantId: "merch3", clientId: "c4", clientName: "Daniela Alves", value: 120, date: new Date(2023, 11, 5).toISOString(), cashbackGenerated: 6 },
-  { id: "s5", merchantId: "merch2", clientId: "c5", clientName: "Eduardo Lima", value: 90, date: new Date(2023, 11, 10).toISOString(), cashbackGenerated: 4.5 },
-];
-
-// Mock merchant names for display
-const merchantNames: Record<string, string> = {
-    merch1: "Loja da Esquina",
-    merch2: "Padaria Pão Quente",
-    merch3: "Salão Beleza Pura"
-}
-
+import { initialGlobalSales, merchantNames } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function AdminSalesPage() {
   const [sales, setSales] = useState<Sale[]>(initialGlobalSales);

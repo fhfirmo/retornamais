@@ -4,50 +4,34 @@
 import React, { useState, useEffect } from "react";
 import { SettingsForm } from "@/components/forms/SettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, UserCog, Gift, CalendarPlus, PlusCircle } from "lucide-react";
+import { Settings as SettingsIcon, UserCog, Gift, CalendarPlus, PlusCircle, Edit2 } from "lucide-react";
 import type { MerchantSettings, Campaign, MerchantUser } from "@/types";
-import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { CampaignForm } from "@/components/forms/CampaignForm";
 import { CampaignList } from "@/components/lists/CampaignList";
 import { useToast } from "@/hooks/use-toast";
-
-const mockMerchantUser: Omit<MerchantUser, 'id' | 'role' | 'email'> = {
-  name: "Loja Exemplo Retorna+",
-  cnpjCpf: "00.000.000/0001-00",
-};
-
-const initialSettings: MerchantSettings = {
-  cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
-  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
-  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE,
-  campaigns: [
-    { id: "camp1", name: "Natal Premiado", startDate: "2024-12-01", endDate: "2024-12-25", cashbackMultiplier: 2, isActive: true },
-    { id: "camp2", name: "Aniversário da Loja", startDate: "2025-03-10", endDate: "2025-03-17", cashbackMultiplier: 1.5, isActive: false },
-  ],
-};
+import { mockMerchantUser, mockInitialMerchantSettings } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function SettingsPage() {
   const [merchantInfo, setMerchantInfo] = useState(mockMerchantUser);
-  const [settings, setSettings] = useState<MerchantSettings>(initialSettings);
+  const [settings, setSettings] = useState<MerchantSettings>(mockInitialMerchantSettings);
   const [showCampaignForm, setShowCampaignForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     // Load settings from backend/localStorage in a real app
+    // For prototype, initialize with mock data (already done via useState)
   }, []);
 
   const handleSettingsUpdate = (updatedSettings: Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate' | 'minimumRedemptionValue'>) => {
     setSettings(prev => ({...prev, ...updatedSettings}));
     toast({ title: "Preferências Salvas!", description: "Configurações de cashback, template e mínimo para resgate atualizadas."});
-    // Persist to backend
   };
 
   const handleMerchantInfoUpdate = (updatedInfo: Partial<typeof mockMerchantUser>) => {
     setMerchantInfo(prev => ({...prev, ...updatedInfo}));
     toast({ title: "Informações Atualizadas!", description: "Dados do comerciante salvos."});
-     // Persist to backend
   };
 
   const handleCampaignSubmit = (campaign: Campaign) => {
@@ -58,7 +42,7 @@ export default function SettingsPage() {
         if (index > -1) campaigns[index] = campaign;
         toast({title: "Campanha Atualizada!", description: `"${campaign.name}" foi atualizada.`});
       } else {
-        campaigns.push({ ...campaign, id: crypto.randomUUID() });
+        campaigns.push({ ...campaign, id: crypto.randomUUID() }); // Ensure new campaigns get a unique ID
         toast({title: "Campanha Adicionada!", description: `"${campaign.name}" foi criada.`});
       }
       return { ...prev, campaigns };
@@ -73,12 +57,24 @@ export default function SettingsPage() {
   };
 
   const handleDeleteCampaign = (campaignId: string) => {
+     if (confirm(`Tem certeza que deseja excluir a campanha?`)) {
+        setSettings(prev => ({
+            ...prev,
+            campaigns: prev.campaigns?.filter(c => c.id !== campaignId)
+        }));
+        toast({title: "Campanha Removida!", variant: "destructive"});
+     }
+  };
+
+  const handleToggleCampaignActive = (campaignId: string, currentIsActive: boolean) => {
     setSettings(prev => ({
-        ...prev,
-        campaigns: prev.campaigns?.filter(c => c.id !== campaignId)
+      ...prev,
+      campaigns: prev.campaigns?.map(c => 
+        c.id === campaignId ? { ...c, isActive: !currentIsActive } : c
+      )
     }));
-    toast({title: "Campanha Removida!", variant: "destructive"});
-  }
+    toast({ title: "Status da Campanha Alterado!" });
+  };
 
 
   return (
@@ -95,7 +91,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="font-headline flex items-center"><UserCog className="mr-2 h-6 w-6 text-secondary"/> Dados do Comerciante</CardTitle>
           <CardDescription>
-            Informações do seu estabelecimento. (Campos apenas para visualização no protótipo)
+            Informações do seu estabelecimento.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -107,8 +103,9 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-muted-foreground">CNPJ/CPF</label>
                 <p className="text-lg font-semibold">{merchantInfo.cnpjCpf}</p>
             </div>
-            {/* In a real app, there would be a form here to edit these values */}
-            <Button variant="outline" disabled>Editar Dados (Indisponível no Protótipo)</Button>
+            <Button variant="outline" onClick={() => alert("Placeholder: Editar Dados do Comerciante")} >
+              <Edit2 className="mr-2 h-4 w-4" /> Editar Dados do Comerciante
+            </Button>
         </CardContent>
       </Card>
 
@@ -160,6 +157,7 @@ export default function SettingsPage() {
                 campaigns={settings.campaigns || []} 
                 onEdit={handleEditCampaign} 
                 onDelete={handleDeleteCampaign}
+                onToggleActive={handleToggleCampaignActive}
             />
         </CardContent>
       </Card>

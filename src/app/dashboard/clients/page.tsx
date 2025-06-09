@@ -21,14 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-
-
-const initialClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
-  { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
-  { id: "4", name: "Daniela Alves", phone: "5541966660004", accumulatedCashback: 55.00, currentBalance: 20.00, cashbackRedeemed: 35.00 },
-];
+import { mockMerchantClients } from "@/lib/mockData"; // Import from centralized mock data
 
 
 export default function ClientsPage() {
@@ -41,7 +34,7 @@ export default function ClientsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    setClients(initialClients);
+    setClients(mockMerchantClients);
   }, []);
 
   const filteredClients = useMemo(() => {
@@ -57,7 +50,9 @@ export default function ClientsPage() {
       setClients(clients.map(c => c.id === client.id ? client : c));
       toast({ title: "Cliente Atualizado", description: `${client.name} foi atualizado.`});
     } else {
-      setClients([client, ...clients]); // Add to the beginning
+      // Simulate adding a new client by generating a new ID
+      const newClientWithId = { ...client, id: crypto.randomUUID(), merchantId: "merch_example" };
+      setClients([newClientWithId, ...clients]); 
       toast({ title: "Cliente Adicionado", description: `${client.name} foi adicionado.`});
     }
     setShowForm(false);
@@ -87,8 +82,6 @@ export default function ClientsPage() {
       title: "Enviar Mensagem",
       description: `Preparando para enviar mensagem para ${client.name}. Redirecionando...`,
     });
-    // For prototype, pass client data via query params or use state management for more complex data
-    // For now, only passing client ID, actual client data would be fetched on WhatsApp page
     router.push(`/dashboard/whatsapp?clientId=${client.id}`);
   };
 

@@ -1,5 +1,5 @@
 
-"use client"; // For mock data and state
+"use client"; 
 
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,19 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Client, Sale } from "@/types"; 
 import React, { useState, useEffect } from "react";
-
-// Mock Data - In a real app, this would come from an API
-const mockClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
-  { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
-];
-
-const mockSales: Sale[] = [
-  { id: "s1", clientId: "1", clientName: "Ana Silva", value: 100, date: new Date(2023, 10, 15).toISOString(), cashbackGenerated: 5 },
-  { id: "s2", clientId: "2", clientName: "Bruno Costa", value: 250, date: new Date(2023, 10, 16).toISOString(), cashbackGenerated: 12.5 },
-  { id: "s3", clientId: "1", clientName: "Ana Silva", value: 50, date: new Date(2023, 10, 18).toISOString(), cashbackGenerated: 2.5 },
-];
+import { mockMerchantClients, mockMerchantSales } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function DashboardPage() {
   const [totalClients, setTotalClients] = useState(0);
@@ -31,18 +19,17 @@ export default function DashboardPage() {
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
 
   useEffect(() => {
-    // Simulate fetching data
-    setTotalClients(mockClients.length);
-    const salesSum = mockSales.reduce((sum, sale) => sum + sale.value, 0);
+    setTotalClients(mockMerchantClients.length);
+    const salesSum = mockMerchantSales.reduce((sum, sale) => sum + sale.value, 0);
     setTotalSalesValue(salesSum);
-    const cashbackSum = mockSales.reduce((sum, sale) => sum + sale.cashbackGenerated, 0);
+    const cashbackSum = mockMerchantSales.reduce((sum, sale) => sum + sale.cashbackGenerated, 0);
     setTotalCashbackGiven(cashbackSum);
-    const redeemedSum = mockClients.reduce((sum, client) => sum + (client.cashbackRedeemed || 0), 0);
+    const redeemedSum = mockMerchantClients.reduce((sum, client) => sum + (client.cashbackRedeemed || 0), 0);
     setTotalCashbackRedeemed(redeemedSum);
 
-    setRecentSales(mockSales.slice(0, 3).map(sale => ({
+    setRecentSales(mockMerchantSales.slice(0, 3).map(sale => ({
       ...sale,
-      clientName: mockClients.find(c => c.id === sale.clientId)?.name || 'Cliente Desconhecido'
+      clientName: mockMerchantClients.find(c => c.id === sale.clientId)?.name || 'Cliente Desconhecido'
     })));
   }, []);
 
@@ -77,7 +64,7 @@ export default function DashboardPage() {
         <StatCard
           title="Cashback Resgatado"
           value={`R$ ${totalCashbackRedeemed.toFixed(2)}`}
-          icon={TrendingDown}
+          icon={TrendingDown} // Icon changed to TrendingDown
           description="Cashback utilizado pelos clientes"
           colorClass="text-green-500"
         />
@@ -120,13 +107,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
              <Button className="w-full justify-start" variant="ghost" asChild>
-                {/* This link should ideally go to a client creation form within the current page or a modal */}
                 <Link href="/dashboard/clients"> 
                     <Users className="mr-2 h-5 w-5 text-secondary" /> Novo Cliente
                 </Link>
              </Button>
              <Button className="w-full justify-start" variant="ghost" asChild>
-                 {/* This link should ideally go to a sale creation form within the current page or a modal */}
                 <Link href="/dashboard/sales">
                     <ShoppingCart className="mr-2 h-5 w-5 text-secondary" /> Nova Venda
                 </Link>

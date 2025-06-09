@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, ShoppingCart, Search, CalendarDays } from "lucide-react";
 import type { Client, Sale, MerchantSettings } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,32 +22,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-
-
-const initialClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
-];
-
-const initialSales: Sale[] = [
-  { id: "s1", clientId: "1", clientName: "Ana Silva", value: 100, date: new Date(2023, 10, 15).toISOString(), cashbackGenerated: 5 },
-  { id: "s2", clientId: "2", clientName: "Bruno Costa", value: 250, date: new Date(2023, 10, 16).toISOString(), cashbackGenerated: 12.5 },
-  { id: "s3", clientId: "1", clientName: "Ana Silva", value: 75, date: new Date(2023, 11, 1).toISOString(), cashbackGenerated: 3.75 },
-  { id: "s4", clientId: "2", clientName: "Bruno Costa", value: 120, date: new Date(2023, 11, 5).toISOString(), cashbackGenerated: 6 },
-];
-
-const initialSettings: MerchantSettings = {
-  cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
-  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
-  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE,
-};
+import { mockMerchantClients, mockMerchantSales, mockInitialMerchantSettings } from "@/lib/mockData"; // Import from centralized mock data
 
 const ALL_CLIENTS_FILTER_VALUE = "__ALL_CLIENTS__";
 
 export default function SalesPage() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [sales, setSales] = useState<Sale[]>(initialSales);
-  const [settings, setSettings] = useState<MerchantSettings>(initialSettings);
+  const [clients, setClients] = useState<Client[]>(mockMerchantClients);
+  const [sales, setSales] = useState<Sale[]>(mockMerchantSales);
+  const [settings, setSettings] = useState<MerchantSettings>(mockInitialMerchantSettings);
   const [showForm, setShowForm] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
@@ -59,8 +40,7 @@ export default function SalesPage() {
   const [filterDate, setFilterDate] = useState<string>(""); 
 
   useEffect(() => {
-    // Simulate fetching data
-    // In a real app, fetch settings as well
+    // In a real app, fetch settings if they can change dynamically for the merchant
   }, []);
 
   const filteredSales = useMemo(() => {
@@ -73,10 +53,12 @@ export default function SalesPage() {
 
   const handleFormSubmit = (sale: Sale, updatedClient?: Client) => {
     if (editingSale) {
-      setSales(sales.map(s => s.id === sale.id ? sale : s));
+      setSales(prevSales => prevSales.map(s => s.id === sale.id ? sale : s));
       toast({ title: "Venda Atualizada", description: `Venda para ${sale.clientName} atualizada.`});
     } else {
-      setSales([sale, ...sales]); 
+       // Simulate adding a new sale by generating a new ID
+      const newSaleWithId = { ...sale, id: crypto.randomUUID(), merchantId: "merch_example" };
+      setSales(prevSales => [newSaleWithId, ...prevSales]); 
       toast({ title: "Venda Adicionada", description: `Venda para ${sale.clientName} adicionada.`});
       
       if (updatedClient) {
@@ -85,7 +67,6 @@ export default function SalesPage() {
           description: `Preparando mensagem WhatsApp para ${sale.clientName}...`,
           duration: 3000,
         });
-        // Pass relevant info for WhatsApp message generation
         setTimeout(() => router.push(
           `/dashboard/whatsapp?clientId=${sale.clientId}&purchaseValue=${sale.value}&cashbackFromThisPurchase=${sale.cashbackGenerated}&newCurrentBalance=${updatedClient.currentBalance}`
         ), 1000);
@@ -117,9 +98,10 @@ export default function SalesPage() {
         if (client) {
             const updatedClient = {
                 ...client,
-                accumulatedCashback: client.accumulatedCashback - saleBeingDeleted.cashbackGenerated, // Assuming accumulatedCashback tracks total ever earned
+                accumulatedCashback: client.accumulatedCashback - saleBeingDeleted.cashbackGenerated,
                 currentBalance: client.currentBalance - saleBeingDeleted.cashbackGenerated
             };
+             if (updatedClient.currentBalance < 0) updatedClient.currentBalance = 0; // Ensure balance doesn't go negative
             setClients(prevClients => prevClients.map(c => c.id === updatedClient.id ? updatedClient : c));
         }
         setSales(sales.filter(s => s.id !== saleToDelete));

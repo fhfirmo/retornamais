@@ -16,22 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Client } from "@/types";
-
-// Mock Data - Representing clients from potentially different merchants
-const initialGlobalClients: Client[] = [
-  { id: "c1", merchantId: "merch1", name: "Ana Silva (Loja Esquina)", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
-  { id: "c2", merchantId: "merch2", name: "Bruno Costa (Padaria)", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
-  { id: "c3", merchantId: "merch1", name: "Carlos Dias (Loja Esquina)", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
-  { id: "c4", merchantId: "merch3", name: "Daniela Alves (Salão)", phone: "5541966660004", accumulatedCashback: 55.00, currentBalance: 20.00, cashbackRedeemed: 35.00 },
-  { id: "c5", merchantId: "merch2", name: "Eduardo Lima (Padaria)", phone: "5551955550005", accumulatedCashback: 10.00, currentBalance: 5.00, cashbackRedeemed: 5.00 },
-];
-
-// Mock merchant names for display
-const merchantNames: Record<string, string> = {
-    merch1: "Loja da Esquina",
-    merch2: "Padaria Pão Quente",
-    merch3: "Salão Beleza Pura"
-}
+import { initialGlobalClients, merchantNames } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function AdminClientsPage() {
   const [clients, setClients] = useState<Client[]>(initialGlobalClients);

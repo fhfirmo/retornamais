@@ -10,9 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, MessageSquare } from "lucide-react";
+import { Edit, Trash2, MessageSquare, Eye } from "lucide-react";
 import type { Client } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 interface ClientTableProps {
   clients: Client[];
@@ -54,6 +55,11 @@ export function ClientTable({ clients, onEdit, onDelete, onSendMessage }: Client
                 </Badge>
               </TableCell>
               <TableCell className="text-center space-x-1 sm:space-x-2">
+                <Button variant="ghost" size="icon" asChild title="Ver Detalhes">
+                  <Link href={`/dashboard/clients/${client.id}`}>
+                    <Eye className="h-4 w-4 text-blue-500" />
+                  </Link>
+                </Button>
                 <Button variant="ghost" size="icon" onClick={() => onSendMessage(client)} title="Enviar WhatsApp">
                   <MessageSquare className="h-4 w-4 text-accent" />
                 </Button>

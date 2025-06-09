@@ -1,4 +1,3 @@
-
 "use client";
 
 import { WhatsappComposer } from "@/components/dashboard/WhatsappComposer";
@@ -6,27 +5,12 @@ import { MessageSquare } from "lucide-react";
 import type { Client, MerchantSettings } from "@/types";
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
-import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
-
-// Mock Data - In a real app, this would come from an API or context
-const initialClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
-  { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
-];
-
-// Mock settings for the merchant
-const mockMerchantSettings: MerchantSettings = {
-  cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
-  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
-  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE, 
-  campaigns: [], // Assuming no active campaigns for simplicity here
-};
+import { mockMerchantClients, mockInitialMerchantSettings } from "@/lib/mockData"; // Import from centralized mock data
 
 
 export default function WhatsappPage() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [merchantSettings, setMerchantSettings] = useState<MerchantSettings>(mockMerchantSettings);
+  const [clients, setClients] = useState<Client[]>(mockMerchantClients);
+  const [merchantSettings, setMerchantSettings] = useState<MerchantSettings>(mockInitialMerchantSettings);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const searchParams = useSearchParams();
 
@@ -36,7 +20,7 @@ export default function WhatsappPage() {
 
 
   useEffect(() => {
-    // In a real app, fetch merchantSettings
+    // In a real app, fetch merchantSettings for the logged-in merchant
     // setMerchantSettings(fetchedSettings);
 
     const clientId = searchParams.get('clientId');
@@ -45,7 +29,7 @@ export default function WhatsappPage() {
     const newCurrentBalanceParam = searchParams.get('newCurrentBalance');
 
     if (clientId) {
-      const client = initialClients.find(c => c.id === clientId);
+      const client = clients.find(c => c.id === clientId); // Use 'clients' state which is mockMerchantClients
       if (client) setSelectedClient(client);
     }
     if (purchaseValueParam) {
@@ -58,7 +42,7 @@ export default function WhatsappPage() {
         setInitialNewCurrentBalance(parseFloat(newCurrentBalanceParam));
     }
 
-  }, [searchParams]);
+  }, [searchParams, clients]);
 
 
   return (
@@ -76,7 +60,7 @@ export default function WhatsappPage() {
         initialPurchaseValue={initialPurchaseValue}
         initialCashbackFromThisPurchase={initialCashbackFromThisPurchase}
         initialNewCurrentBalance={initialNewCurrentBalance}
-        merchantSettings={merchantSettings} // Pass the full settings object
+        merchantSettings={merchantSettings} 
         />
     </div>
   );

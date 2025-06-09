@@ -15,20 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { UserAccount } from "@/types"; // Using a generic UserAccount type
-
-// Mock Data
-const initialSystemUsers: UserAccount[] = [
-  { id: "admin1", name: "Admin Principal", email: "admin@retornamais.com", role: "admin" },
-  { id: "merch1", name: "Loja da Esquina", email: "lojaesquina@email.com", role: "merchant" },
-  { id: "merch2", name: "Padaria Pão Quente", email: "padaria@email.com", role: "merchant" },
-  { id: "admin2", name: "Admin Suporte", email: "suporte@retornamais.com", role: "admin" },
-];
+import type { UserAccount } from "@/types";
+import { initialSystemUsers } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserAccount[]>(initialSystemUsers);
   const [searchTerm, setSearchTerm] = useState("");
-  // Add states for form visibility, editing user, etc. if implementing forms on this page
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,7 +28,6 @@ export default function AdminUsersPage() {
   );
 
   const handleAddUser = () => {
-    // Logic to show a form/modal for adding a new user
     console.log("Add new user clicked");
     alert("Funcionalidade de adicionar usuário (Admin) - Placeholder");
   };
@@ -50,7 +41,6 @@ export default function AdminUsersPage() {
     console.log("Delete user ID:", userId);
     if(confirm("Tem certeza que deseja excluir este usuário do sistema?")) {
         setUsers(users.filter(u => u.id !== userId));
-        // toast({ title: "Usuário Excluído" }); // Requires useToast hook
         alert("Usuário excluído (simulação).");
     }
   };

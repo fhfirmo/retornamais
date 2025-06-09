@@ -14,20 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { MerchantUser } from "@/types"; // Using a specific MerchantUser type
+import type { MerchantUser } from "@/types";
 import Link from "next/link";
-
-// Mock Data
-const initialMerchants: MerchantUser[] = [
-  { id: "merch1", name: "Loja da Esquina", email: "lojaesquina@email.com", role: "merchant", cnpjCpf: "11.111.111/0001-11" },
-  { id: "merch2", name: "Padaria Pão Quente", email: "padaria@email.com", role: "merchant", cnpjCpf: "22.222.222/0001-22" },
-  { id: "merch3", name: "Salão Beleza Pura", email: "salao@email.com", role: "merchant", cnpjCpf: "333.333.333-33" },
-];
+import { initialMerchants } from "@/lib/mockData"; // Import from centralized mock data
 
 export default function AdminMerchantsPage() {
   const [merchants, setMerchants] = useState<MerchantUser[]>(initialMerchants);
   const [searchTerm, setSearchTerm] = useState("");
-  // Add states for form visibility, editing merchant, etc.
 
   const filteredMerchants = merchants.filter(merchant =>
     merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,9 +29,6 @@ export default function AdminMerchantsPage() {
   );
 
   const handleAddMerchant = () => {
-    // Logic to show a form/modal for adding a new merchant
-    // This could redirect to a version of the main merchant registration page,
-    // but with admin privileges (e.g., setting initial password or status).
     console.log("Add new merchant clicked");
     alert("Funcionalidade de adicionar comerciante (Admin) - Placeholder. Redirecionaria para /auth/merchant/register ou um formulário modal.");
     // router.push('/auth/merchant/register?byAdmin=true'); // Example
@@ -112,7 +102,8 @@ export default function AdminMerchantsPage() {
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                          <Button variant="ghost" size="icon" asChild title="Ver Painel do Comerciante (simulação)">
-                          <Link href={`/dashboard?merchantId=${merchant.id}`}> {/* This link is illustrative */}
+                          {/* This link is illustrative, actual merchantId might differ from user.id for merchantUser */}
+                          <Link href={`/dashboard?merchantUserId=${merchant.id}`}> 
                             <Eye className="h-4 w-4 text-blue-500" />
                           </Link>
                         </Button>
