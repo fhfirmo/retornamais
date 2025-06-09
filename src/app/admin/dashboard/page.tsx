@@ -3,6 +3,8 @@
 
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Building, Users, ShoppingCart, Gift, BarChart3, CalendarCheck2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
