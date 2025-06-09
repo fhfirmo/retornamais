@@ -59,16 +59,16 @@ export const merchantNames: Record<string, string> = {
 };
 
 export let initialMerchants: MerchantUser[] = [
-  { id: "merch1", name: "Loja da Esquina", email: "lojaesquina@email.com", role: "merchant", cnpjCpf: "11.111.111/0001-11" },
-  { id: "merch2", name: "Padaria Pão Quente", email: "padaria@email.com", role: "merchant", cnpjCpf: "22.222.222/0001-22" },
-  { id: "merch3", name: "Salão Beleza Pura", email: "salao@email.com", role: "merchant", cnpjCpf: "333.333.333-33" },
+  { id: "merch1", name: "Loja da Esquina", email: "lojaesquina@email.com", role: "merchant", cnpjCpf: "11.111.111/0001-11", cpf: "111.111.111-11", city: "São Paulo", neighborhood: "Centro", state: "SP" },
+  { id: "merch2", name: "Padaria Pão Quente", email: "padaria@email.com", role: "merchant", cnpjCpf: "22.222.222/0001-22", cpf: "222.222.222-22", city: "Rio de Janeiro", neighborhood: "Copacabana", state: "RJ" },
+  { id: "merch3", name: "Salão Beleza Pura", email: "salao@email.com", role: "merchant", cnpjCpf: "333.333.333-33", cpf: "333.333.333-33", city: "Belo Horizonte", neighborhood: "Savassi", state: "MG" },
 ];
 
 export let initialSystemUsers: UserAccount[] = [
-  { id: "admin1", name: "Admin Principal", email: "admin@retornamais.com", role: "admin" },
-  { id: "merch1u", name: "Usuário Loja Esquina", email: "lojaesquina@email.com", role: "merchant" },
-  { id: "merch2u", name: "Usuário Padaria Pão Quente", email: "padaria@email.com", role: "merchant" },
-  { id: "admin2", name: "Admin Suporte", email: "suporte@retornamais.com", role: "admin" },
+  { id: "admin1", name: "Admin Principal", email: "admin@retornamais.com", role: "admin", cpf: "000.000.000-00", city: "Curitiba", neighborhood: "Centro", state: "PR" },
+  { id: "merch1u", name: "Usuário Loja Esquina", email: "lojaesquina@email.com", role: "merchant", cpf: "111.111.111-11", city: "São Paulo", neighborhood: "Centro", state: "SP" }, // This user links to MerchantUser merch1 by email maybe
+  { id: "merch2u", name: "Usuário Padaria Pão Quente", email: "padaria@email.com", role: "merchant", cpf: "222.222.222-22", city: "Rio de Janeiro", neighborhood: "Copacabana", state: "RJ" },
+  { id: "admin2", name: "Admin Suporte", email: "suporte@retornamais.com", role: "admin", cpf: "999.999.999-99", city: "Porto Alegre", neighborhood: "Moinhos", state: "RS" },
 ];
 
 export function getAdminDashboardStats(): AdminDashboardStats {

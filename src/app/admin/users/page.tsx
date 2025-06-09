@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,36 +15,80 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { UserAccount } from "@/types";
-import { initialSystemUsers } from "@/lib/mockData"; // Import from centralized mock data
+import { initialSystemUsers } from "@/lib/mockData"; 
+import { UserAdminForm } from "@/components/forms/UserAdminForm";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserAccount[]>(initialSystemUsers);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
+  const { toast } = useToast();
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    return users.filter(user =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm]);
 
-  const handleAddUser = () => {
-    console.log("Add new user clicked");
-    alert("Funcionalidade de adicionar usuário (Admin) - Placeholder");
+  const handleOpenForm = (user?: UserAccount) => {
+    setEditingUser(user || null);
+    setIsFormOpen(true);
   };
 
-  const handleEditUser = (user: UserAccount) => {
-    console.log("Edit user:", user);
-    alert(`Editar usuário: ${user.name} (Admin) - Placeholder`);
+  const handleFormSubmit = (values: any, userId?: string) => { // values type will be inferred by UserAdminForm
+    if (userId) { // Editing existing user
+      setUsers(prevUsers =>
+        prevUsers.map(u =>
+          u.id === userId ? { ...u, ...values, password: values.password || u.password } : u // Keep old password if new one is empty
+        )
+      );
+      toast({ title: "Usuário Atualizado!", description: `Os dados de ${values.name} foram atualizados.` });
+    } else { // Adding new user
+      const newUser: UserAccount = {
+        id: crypto.randomUUID(),
+        ...values,
+        // Password is already in values from the form
+      };
+      setUsers(prevUsers => [newUser, ...prevUsers]);
+      toast({ title: "Usuário Adicionado!", description: `${values.name} foi cadastrado com sucesso.` });
+    }
+    setIsFormOpen(false);
+    setEditingUser(null);
   };
 
-  const handleDeleteUser = (userId: string) => {
-    console.log("Delete user ID:", userId);
-    if(confirm("Tem certeza que deseja excluir este usuário do sistema?")) {
-        setUsers(users.filter(u => u.id !== userId));
-        alert("Usuário excluído (simulação).");
+  const handleDeleteRequest = (user: UserAccount) => {
+    setUserToDelete(user);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      setUsers(prevUsers => prevUsers.filter(m => m.id !== userToDelete.id));
+      toast({ title: "Usuário Excluído!", description: `${userToDelete.name} foi excluído.` });
+      setUserToDelete(null);
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -56,7 +100,7 @@ export default function AdminUsersPage() {
           </h1>
           <p className="text-muted-foreground">Adicione, edite e visualize administradores e comerciantes.</p>
         </div>
-        <Button onClick={handleAddUser}>
+        <Button onClick={() => handleOpenForm()}>
           <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Novo Usuário
         </Button>
       </div>
@@ -98,10 +142,10 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)} title="Editar Usuário">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenForm(user)} title="Editar Usuário">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.id)} title="Excluir Usuário">
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRequest(user)} title="Excluir Usuário">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -115,6 +159,41 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-xl">
+              {editingUser ? "Editar Usuário" : "Adicionar Novo Usuário"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser ? "Modifique os dados do usuário abaixo." : "Preencha os dados para cadastrar um novo usuário."}
+            </DialogDescription>
+          </DialogHeader>
+          <UserAdminForm
+            user={editingUser}
+            onSubmit={handleFormSubmit}
+            onCancel={() => setIsFormOpen(false)}
+            isEditing={!!editingUser}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário "{userToDelete?.name}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CardDescription className="text-xs text-muted-foreground">
         Nota: O primeiro administrador deve ser criado diretamente na base de dados. Este painel permite gerenciar usuários subsequentes.
         Clientes finais dos comerciantes são gerenciados dentro do painel de cada comerciante ou na seção "Clientes Globais".

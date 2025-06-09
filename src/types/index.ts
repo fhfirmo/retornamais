@@ -3,7 +3,12 @@ export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'merchant' | 'client_user'; // Role for system users, not end-clients of merchants
+  role: 'admin' | 'merchant'; // Simplified for system users
+  cpf?: string;
+  city?: string;
+  neighborhood?: string;
+  state?: string;
+  password?: string; // Only for creation/update, not stored in frontend state directly
 }
 
 export interface AdminUser extends UserAccount {
@@ -12,7 +17,7 @@ export interface AdminUser extends UserAccount {
 
 export interface MerchantUser extends UserAccount {
   role: 'merchant';
-  cnpjCpf: string;
+  cnpjCpf: string; // Specific to merchant user type
   // settings defined in MerchantSettings
 }
 
