@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Client, Sale } from "@/types";
+import type { Client, Sale, MerchantSettings } from "@/types"; // Ensure MerchantSettings is imported
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -31,7 +32,7 @@ const formSchema = z.object({
 
 interface SaleFormProps {
   clients: Client[];
-  settings: { cashbackPercentage: number }; // Assuming settings are passed
+  settings: MerchantSettings; 
   sale?: Sale | null;
   onSubmitSuccess?: (sale: Sale, updatedClient?: Client) => void;
 }
@@ -54,17 +55,35 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
       return;
     }
 
-    const cashbackGenerated = (values.value * settings.cashbackPercentage) / 100;
+    // Determine cashback percentage: check active campaigns first, then default.
+    // This is a simplified mock. Real campaign logic would be more complex and likely backend-driven.
+    let effectiveCashbackPercentage = settings.cashbackPercentage;
+    const today = new Date().toISOString();
+    const activeCampaign = settings.campaigns?.find(
+      c => new Date(c.startDate) <= new Date(today) && new Date(c.endDate) >= new Date(today) && c.isActive !== false
+    );
+
+    if (activeCampaign) {
+      effectiveCashbackPercentage *= activeCampaign.cashbackMultiplier;
+      toast({ 
+        title: "Campanha Ativa!", 
+        description: `Cashback multiplicado por ${activeCampaign.cashbackMultiplier}x devido à campanha "${activeCampaign.name}".`,
+        variant: "default",
+        className: "bg-yellow-100 border-yellow-400 text-yellow-700"
+      });
+    }
+
+
+    const cashbackGenerated = (values.value * effectiveCashbackPercentage) / 100;
     
     const newOrUpdatedSale: Sale = {
       id: sale?.id || crypto.randomUUID(),
       ...values,
       date: values.date.toISOString(),
       cashbackGenerated,
-      clientName: client.name, // Add clientName for convenience
+      clientName: client.name, 
     };
 
-    // Update client's balance (simplified)
     const updatedClient: Client = {
       ...client,
       accumulatedCashback: (client.accumulatedCashback || 0) + cashbackGenerated,
@@ -76,13 +95,16 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
 
     toast({
       title: sale ? "Venda atualizada!" : "Venda registrada!",
-      description: `Venda de R$ ${values.value.toFixed(2)} para ${client.name} ${sale ? 'atualizada' : 'registrada'}.`,
+      description: `Venda de R$ ${values.value.toFixed(2)} para ${client.name} ${sale ? 'atualizada' : 'registrada'}. Cashback: R$ ${cashbackGenerated.toFixed(2)}`,
     });
     
     if (onSubmitSuccess) {
       onSubmitSuccess(newOrUpdatedSale, updatedClient);
     }
-    if (!sale) form.reset({ clientId: "", value: 0, date: new Date() }); // Reset for new sale
+    // Don't reset if editing, only for new sale
+    if (!sale) {
+       form.reset({ clientId: "", value: 0, date: new Date() });
+    }
   }
 
   return (
@@ -94,16 +116,16 @@ export function SaleForm({ clients, settings, sale, onSubmitSuccess }: SaleFormP
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cliente</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value || undefined}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {clients.map(c => (
+                  {clients.length > 0 ? clients.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name} ({c.phone})</SelectItem>
-                  ))}
+                  )) : <SelectItem value="" disabled>Nenhum cliente disponível</SelectItem>}
                 </SelectContent>
               </Select>
               <FormMessage />

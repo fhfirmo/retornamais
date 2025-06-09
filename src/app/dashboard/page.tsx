@@ -1,19 +1,20 @@
+
 "use client"; // For mock data and state
 
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ShoppingCart, Gift, ArrowRight, MessageSquare } from "lucide-react";
+import { Users, ShoppingCart, Gift, ArrowRight, MessageSquare, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Client, Sale } from "@/types"; // Assuming types are defined
+import type { Client, Sale } from "@/types"; 
 import React, { useState, useEffect } from "react";
 
 // Mock Data - In a real app, this would come from an API
 const mockClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25 },
-  { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0 },
+  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
+  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
+  { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
 ];
 
 const mockSales: Sale[] = [
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [totalClients, setTotalClients] = useState(0);
   const [totalSalesValue, setTotalSalesValue] = useState(0);
   const [totalCashbackGiven, setTotalCashbackGiven] = useState(0);
+  const [totalCashbackRedeemed, setTotalCashbackRedeemed] = useState(0);
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
 
   useEffect(() => {
@@ -35,6 +37,9 @@ export default function DashboardPage() {
     setTotalSalesValue(salesSum);
     const cashbackSum = mockSales.reduce((sum, sale) => sum + sale.cashbackGenerated, 0);
     setTotalCashbackGiven(cashbackSum);
+    const redeemedSum = mockClients.reduce((sum, client) => sum + (client.cashbackRedeemed || 0), 0);
+    setTotalCashbackRedeemed(redeemedSum);
+
     setRecentSales(mockSales.slice(0, 3).map(sale => ({
       ...sale,
       clientName: mockClients.find(c => c.id === sale.clientId)?.name || 'Cliente Desconhecido'
@@ -45,8 +50,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 md:space-y-8">
       <h1 className="text-3xl font-headline font-bold">Painel do Comerciante</h1>
+      <p className="text-muted-foreground">Bem-vindo, Comerciante Exemplo!</p>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Clientes"
           value={totalClients}
@@ -62,11 +68,18 @@ export default function DashboardPage() {
           colorClass="text-accent"
         />
         <StatCard
-          title="Total de Cashback Distribuído"
+          title="Cashback Distribuído"
           value={`R$ ${totalCashbackGiven.toFixed(2)}`}
           icon={Gift}
           description="Cashback concedido aos clientes"
           colorClass="text-primary"
+        />
+        <StatCard
+          title="Cashback Resgatado"
+          value={`R$ ${totalCashbackRedeemed.toFixed(2)}`}
+          icon={TrendingDown}
+          description="Cashback utilizado pelos clientes"
+          colorClass="text-green-500"
         />
       </div>
 
@@ -107,12 +120,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
              <Button className="w-full justify-start" variant="ghost" asChild>
-                <Link href="/dashboard/clients/new">
+                {/* This link should ideally go to a client creation form within the current page or a modal */}
+                <Link href="/dashboard/clients"> 
                     <Users className="mr-2 h-5 w-5 text-secondary" /> Novo Cliente
                 </Link>
              </Button>
              <Button className="w-full justify-start" variant="ghost" asChild>
-                <Link href="/dashboard/sales/new">
+                 {/* This link should ideally go to a sale creation form within the current page or a modal */}
+                <Link href="/dashboard/sales">
                     <ShoppingCart className="mr-2 h-5 w-5 text-secondary" /> Nova Venda
                 </Link>
              </Button>

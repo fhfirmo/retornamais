@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Copy, Send } from "lucide-react";
+import { Loader2, Copy, Send, SendHorizonal } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Client } from "@/types";
 import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/constants";
@@ -39,9 +39,11 @@ type WhatsappFormValues = z.infer<typeof formSchema>;
 interface WhatsappComposerProps {
   clients: Client[];
   initialClient?: Client | null;
+  initialPurchaseValue?: number;
+  initialCashbackGenerated?: number; // Though not directly in default template, useful if template is changed
 }
 
-export function WhatsappComposer({ clients, initialClient }: WhatsappComposerProps) {
+export function WhatsappComposer({ clients, initialClient, initialPurchaseValue, initialCashbackGenerated }: WhatsappComposerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedMessage, setGeneratedMessage] = useState<string | null>(null);
   const { toast } = useToast();
@@ -52,35 +54,37 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
       clientId: initialClient?.id || "",
       clientName: initialClient?.name || "",
       phoneNumber: initialClient?.phone || "",
-      purchaseValue: 0,
-      accumulatedCashback: initialClient?.accumulatedCashback || 0,
+      purchaseValue: initialPurchaseValue || 0,
+      accumulatedCashback: initialClient?.accumulatedCashback || 0, // This should be total accumulated, not from single purchase
       currentBalance: initialClient?.currentBalance || 0,
       template: DEFAULT_WHATSAPP_TEMPLATE,
     },
   });
 
   useEffect(() => {
-    if (initialClient) {
-      form.reset({
-        clientId: initialClient.id,
-        clientName: initialClient.name,
-        phoneNumber: initialClient.phone,
-        purchaseValue: 0,
-        accumulatedCashback: initialClient.accumulatedCashback,
-        currentBalance: initialClient.currentBalance,
-        template: DEFAULT_WHATSAPP_TEMPLATE,
-      });
-    }
-  }, [initialClient, form]);
+    // This effect ensures that if initialClient or initialPurchaseValue changes (e.g., from query params),
+    // the form is reset with these new values.
+    form.reset({
+      clientId: initialClient?.id || "",
+      clientName: initialClient?.name || "",
+      phoneNumber: initialClient?.phone || "",
+      purchaseValue: initialPurchaseValue !== undefined ? initialPurchaseValue : (initialClient ? 0 : 0), // Use initialPurchaseValue if provided
+      accumulatedCashback: initialClient?.accumulatedCashback || 0,
+      currentBalance: initialClient?.currentBalance || 0,
+      template: DEFAULT_WHATSAPP_TEMPLATE,
+    });
+  }, [initialClient, initialPurchaseValue, form]);
 
   const handleClientSelection = (clientId: string) => {
-    const selectedClient = clients.find(c => c.id === clientId);
-    if (selectedClient) {
-      form.setValue("clientId", selectedClient.id); // Also set clientId in the form
-      form.setValue("clientName", selectedClient.name);
-      form.setValue("phoneNumber", selectedClient.phone);
-      form.setValue("accumulatedCashback", selectedClient.accumulatedCashback);
-      form.setValue("currentBalance", selectedClient.currentBalance);
+    const selected = clients.find(c => c.id === clientId);
+    if (selected) {
+      form.setValue("clientId", selected.id); 
+      form.setValue("clientName", selected.name);
+      form.setValue("phoneNumber", selected.phone);
+      form.setValue("accumulatedCashback", selected.accumulatedCashback);
+      form.setValue("currentBalance", selected.currentBalance);
+      // Reset purchase value if a client is selected manually, unless it was pre-filled
+      if(initialPurchaseValue === undefined) form.setValue("purchaseValue", 0); 
     }
   }
 
@@ -113,10 +117,33 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
     if (generatedMessage && form.getValues("phoneNumber")) {
       const phone = form.getValues("phoneNumber").replace(/\D/g, '');
       const text = encodeURIComponent(generatedMessage);
+      // Ensure BR country code if not present. This is a simple check.
       const whatsappUrl = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${text}`;
       window.open(whatsappUrl, "_blank");
     }
   }
+
+  const sendViaSystem = () => {
+    // Placeholder for actual system sending logic
+    if (generatedMessage && form.getValues("phoneNumber")) {
+        toast({
+            title: "Simulação de Envio",
+            description: `Mensagem para ${form.getValues("clientName")} enviada via sistema (simulação).`,
+            className: "bg-blue-100 border-blue-400 text-blue-700"
+        });
+        console.log("Simulating send via system:", {
+            phone: form.getValues("phoneNumber"),
+            message: generatedMessage
+        });
+    } else {
+        toast({
+            title: "Nada para enviar",
+            description: "Gere uma mensagem primeiro.",
+            variant: "destructive"
+        });
+    }
+  }
+
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -134,7 +161,7 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Selecionar Cliente (Opcional)</FormLabel>
-                    <Select onValueChange={(value) => { field.onChange(value); handleClientSelection(value); }} defaultValue={field.value}>
+                    <Select onValueChange={(value) => { field.onChange(value); handleClientSelection(value); }} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Escolha um cliente para preencher os dados" />
@@ -214,14 +241,14 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
               />
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Gerar Mensagem
+                Gerar Mensagem com IA
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg sticky top-20">
+      <Card className="shadow-lg sticky top-20"> {/* Adjust top value if header height changes */}
         <CardHeader>
           <CardTitle className="font-headline">Mensagem Gerada</CardTitle>
           <CardDescription>Revise a mensagem antes de enviar.</CardDescription>
@@ -235,12 +262,15 @@ export function WhatsappComposer({ clients, initialClient }: WhatsappComposerPro
           {!isLoading && generatedMessage && (
             <div className="space-y-4">
               <Textarea value={generatedMessage} readOnly rows={10} className="bg-muted/30 min-h-[200px]" />
-              <div className="flex gap-2">
-                <Button onClick={copyToClipboard} variant="outline" className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button onClick={copyToClipboard} variant="outline" className="w-full">
                   <Copy className="mr-2 h-4 w-4" /> Copiar
                 </Button>
-                <Button onClick={openWhatsApp} className="flex-1 bg-accent hover:bg-accent/90">
-                  <Send className="mr-2 h-4 w-4" /> Abrir no WhatsApp
+                <Button onClick={openWhatsApp} className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  <Send className="mr-2 h-4 w-4" /> Abrir no App
+                </Button>
+                 <Button onClick={sendViaSystem} variant="default" className="w-full bg-accent hover:bg-accent/90">
+                  <SendHorizonal className="mr-2 h-4 w-4" /> Enviar (Sistema)
                 </Button>
               </div>
             </div>

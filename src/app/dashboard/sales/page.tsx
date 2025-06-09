@@ -1,11 +1,14 @@
+
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { SaleForm } from "@/components/forms/SaleForm";
 import { SaleTable } from "@/components/tables/SaleTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlusCircle, ShoppingCart, Search, CalendarDays } from "lucide-react";
 import type { Client, Sale, MerchantSettings } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_CASHBACK_PERCENTAGE } from "@/lib/constants";
@@ -19,16 +22,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
-// Mock Data
+
 const initialClients: Client[] = [
-  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00 },
-  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25 },
+  { id: "1", name: "Ana Silva", phone: "5511999990001", accumulatedCashback: 25.50, currentBalance: 10.00, cashbackRedeemed: 15.50 },
+  { id: "2", name: "Bruno Costa", phone: "5521988880002", accumulatedCashback: 120.75, currentBalance: 50.25, cashbackRedeemed: 70.50 },
 ];
 
 const initialSales: Sale[] = [
   { id: "s1", clientId: "1", clientName: "Ana Silva", value: 100, date: new Date(2023, 10, 15).toISOString(), cashbackGenerated: 5 },
   { id: "s2", clientId: "2", clientName: "Bruno Costa", value: 250, date: new Date(2023, 10, 16).toISOString(), cashbackGenerated: 12.5 },
+  { id: "s3", clientId: "1", clientName: "Ana Silva", value: 75, date: new Date(2023, 11, 1).toISOString(), cashbackGenerated: 3.75 },
+  { id: "s4", clientId: "2", clientName: "Bruno Costa", value: 120, date: new Date(2023, 11, 5).toISOString(), cashbackGenerated: 6 },
 ];
 
 const initialSettings: MerchantSettings = {
@@ -44,24 +50,42 @@ export default function SalesPage() {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
-  // In a real app, clients and settings would be fetched or from context
+  const [filterClientId, setFilterClientId] = useState<string>("");
+  const [filterDate, setFilterDate] = useState<string>(""); // YYYY-MM-DD
+
   useEffect(() => {
-    // If settings are fetched, update them here
-    // If clients are fetched, update them here
+    // Simulate fetching data
   }, []);
+
+  const filteredSales = useMemo(() => {
+    return sales.filter(sale => {
+      const clientMatch = filterClientId ? sale.clientId === filterClientId : true;
+      const dateMatch = filterDate ? sale.date.startsWith(filterDate) : true;
+      return clientMatch && dateMatch;
+    });
+  }, [sales, filterClientId, filterDate]);
 
   const handleFormSubmit = (sale: Sale, updatedClient?: Client) => {
     if (editingSale) {
       setSales(sales.map(s => s.id === sale.id ? sale : s));
       toast({ title: "Venda Atualizada", description: `Venda para ${sale.clientName} atualizada.`});
     } else {
-      setSales([sale, ...sales]); // Add to beginning of list
+      setSales([sale, ...sales]); 
       toast({ title: "Venda Adicionada", description: `Venda para ${sale.clientName} adicionada.`});
+      // Redirect to WhatsApp message composer (simulation)
+      toast({
+        title: "Redirecionando",
+        description: `Preparando mensagem WhatsApp para ${sale.clientName}...`,
+        duration: 3000,
+      });
+      // In a real app, you might pass more sale details or client details
+      setTimeout(() => router.push(`/dashboard/whatsapp?clientId=${sale.clientId}&purchaseValue=${sale.value}&cashbackGenerated=${sale.cashbackGenerated}`), 1000);
     }
 
     if (updatedClient) {
-      setClients(clients.map(c => c.id === updatedClient.id ? updatedClient : c));
+      setClients(prevClients => prevClients.map(c => c.id === updatedClient.id ? updatedClient : c));
     }
 
     setShowForm(false);
@@ -79,9 +103,21 @@ export default function SalesPage() {
 
   const handleDeleteConfirm = () => {
     if (saleToDelete) {
-      const saleValue = sales.find(s => s.id === saleToDelete)?.value || 0;
-      setSales(sales.filter(s => s.id !== saleToDelete));
-      toast({ title: "Venda Excluída", description: `Venda de R$ ${saleValue.toFixed(2)} foi excluída.`});
+      const saleBeingDeleted = sales.find(s => s.id === saleToDelete);
+      if(saleBeingDeleted) {
+        // Basic mock logic: revert cashback for deleted sale. Real app needs robust transaction handling.
+        const client = clients.find(c => c.id === saleBeingDeleted.clientId);
+        if (client) {
+            const updatedClient = {
+                ...client,
+                accumulatedCashback: client.accumulatedCashback - saleBeingDeleted.cashbackGenerated,
+                currentBalance: client.currentBalance - saleBeingDeleted.cashbackGenerated
+            };
+            setClients(prevClients => prevClients.map(c => c.id === updatedClient.id ? updatedClient : c));
+        }
+        setSales(sales.filter(s => s.id !== saleToDelete));
+        toast({ title: "Venda Excluída", description: `Venda de R$ ${saleBeingDeleted.value.toFixed(2)} foi excluída e cashback revertido (simulação).`});
+      }
       setSaleToDelete(null);
     }
   };
@@ -129,9 +165,39 @@ export default function SalesPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="font-headline">Histórico de Vendas</CardTitle>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div>
+              <label htmlFor="clientFilter" className="block text-sm font-medium text-muted-foreground mb-1">Filtrar por Cliente</label>
+              <Select onValueChange={setFilterClientId} value={filterClientId}>
+                <SelectTrigger id="clientFilter">
+                  <SelectValue placeholder="Todos os Clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os Clientes</SelectItem>
+                  {clients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="dateFilter" className="block text-sm font-medium text-muted-foreground mb-1">Filtrar por Data</label>
+              <div className="relative">
+                <Input 
+                  id="dateFilter"
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="pr-8"
+                />
+                <CalendarDays className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            <Button onClick={() => {setFilterClientId(""); setFilterDate("");}} variant="outline" className="self-end">Limpar Filtros</Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <SaleTable sales={sales} onEdit={handleEdit} onDelete={handleDeleteRequest} />
+          <SaleTable sales={filteredSales} onEdit={handleEdit} onDelete={handleDeleteRequest} />
         </CardContent>
       </Card>
 
@@ -140,7 +206,7 @@ export default function SalesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita. O cashback associado não será revertido automaticamente.
+              Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita. O cashback associado será revertido (simulação).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

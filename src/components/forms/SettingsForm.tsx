@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { MerchantSettings } from "@/types";
+import type { MerchantSettings } from "@/types"; // Only needs a subset for this form
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -26,13 +27,17 @@ const formSchema = z.object({
   whatsappTemplate: z.string().min(10, "Template da mensagem é muito curto."),
 });
 
+// This form only handles a part of MerchantSettings
+type SettingsSubFormValues = Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate'>;
+
 interface SettingsFormProps {
-  settings: MerchantSettings;
-  onSubmitSuccess?: (settings: MerchantSettings) => void;
+  settings: SettingsSubFormValues;
+  onSubmitSuccess?: (values: SettingsSubFormValues) => void;
 }
 
 export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
-  const { toast } = useToast();
+  const { toast } = useToast(); // Kept for consistency, though parent page handles toast
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,12 +46,17 @@ export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Settings data:", values);
-    toast({
-      title: "Configurações Salvas!",
-      description: "Suas preferências foram atualizadas.",
+  // Watch for external changes to settings props
+  React.useEffect(() => {
+    form.reset({
+      cashbackPercentage: settings.cashbackPercentage,
+      whatsappTemplate: settings.whatsappTemplate,
     });
+  }, [settings, form]);
+
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    // Parent component will handle the actual update and toast
     if (onSubmitSuccess) {
       onSubmitSuccess(values);
     }
@@ -60,12 +70,12 @@ export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
           name="cashbackPercentage"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Porcentagem de Cashback (%)</FormLabel>
+              <FormLabel>Porcentagem de Cashback Padrão (%)</FormLabel>
               <FormControl>
                 <Input type="number" step="0.1" placeholder="Ex: 5" {...field} />
               </FormControl>
               <FormDescription>
-                A porcentagem do valor da compra que será convertida em cashback para o cliente.
+                A porcentagem do valor da compra que será convertida em cashback (pode ser afetada por campanhas).
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -93,7 +103,7 @@ export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Salvar Configurações</Button>
+        <Button type="submit">Salvar Preferências</Button>
       </form>
     </Form>
   );

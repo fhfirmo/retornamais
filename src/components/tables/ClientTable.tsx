@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -22,7 +23,7 @@ interface ClientTableProps {
 
 export function ClientTable({ clients, onEdit, onDelete, onSendMessage }: ClientTableProps) {
   if (clients.length === 0) {
-    return <p className="text-muted-foreground text-center py-8">Nenhum cliente cadastrado ainda.</p>;
+    return <p className="text-muted-foreground text-center py-8">Nenhum cliente encontrado.</p>;
   }
   
   return (
@@ -32,7 +33,8 @@ export function ClientTable({ clients, onEdit, onDelete, onSendMessage }: Client
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>Telefone (WhatsApp)</TableHead>
-            <TableHead className="text-right">Saldo Cashback</TableHead>
+            <TableHead className="text-right">Saldo Cashback (R$)</TableHead>
+            <TableHead className="text-right">Cashback Resgatado (R$)</TableHead>
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -43,10 +45,15 @@ export function ClientTable({ clients, onEdit, onDelete, onSendMessage }: Client
               <TableCell>{client.phone}</TableCell>
               <TableCell className="text-right">
                 <Badge variant="secondary" className="bg-secondary/30 text-secondary-foreground">
-                  R$ {client.currentBalance.toFixed(2)}
+                  {client.currentBalance.toFixed(2)}
                 </Badge>
               </TableCell>
-              <TableCell className="text-center space-x-2">
+              <TableCell className="text-right">
+                <Badge variant="outline" className="text-green-700 border-green-500">
+                  {(client.cashbackRedeemed || 0).toFixed(2)}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center space-x-1 sm:space-x-2">
                 <Button variant="ghost" size="icon" onClick={() => onSendMessage(client)} title="Enviar WhatsApp">
                   <MessageSquare className="h-4 w-4 text-accent" />
                 </Button>
