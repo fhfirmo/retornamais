@@ -1,14 +1,15 @@
+
 "use client";
 
-import { WhatsappComposer } from "@/components/dashboard/WhatsappComposer";
-import { MessageSquare } from "lucide-react";
-import type { Client, MerchantSettings } from "@/types";
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
-import { mockMerchantClients, mockInitialMerchantSettings } from "@/lib/mockData"; // Import from centralized mock data
+import { WhatsappComposer } from "@/components/dashboard/WhatsappComposer";
+import { MessageSquare, Loader2 } from "lucide-react";
+import type { Client, MerchantSettings } from "@/types";
+import { mockMerchantClients, mockInitialMerchantSettings } from "@/lib/mockData";
 
-
-export default function WhatsappPage() {
+// Este componente conterá a lógica que usa useSearchParams
+function WhatsappPageContent() {
   const [clients, setClients] = useState<Client[]>(mockMerchantClients);
   const [merchantSettings, setMerchantSettings] = useState<MerchantSettings>(mockInitialMerchantSettings);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -20,9 +21,7 @@ export default function WhatsappPage() {
 
 
   useEffect(() => {
-    // In a real app, fetch merchantSettings for the logged-in merchant
-    // setMerchantSettings(fetchedSettings);
-
+    // Este efeito é executado no cliente após a hidratação e searchParams estarem disponíveis
     const clientId = searchParams.get('clientId');
     const purchaseValueParam = searchParams.get('purchaseValue');
     const cashbackFromThisPurchaseParam = searchParams.get('cashbackFromThisPurchase');
@@ -46,6 +45,20 @@ export default function WhatsappPage() {
 
 
   return (
+    <WhatsappComposer
+      clients={clients}
+      initialClient={selectedClient}
+      initialPurchaseValue={initialPurchaseValue}
+      initialCashbackFromThisPurchase={initialCashbackFromThisPurchase}
+      initialNewCurrentBalance={initialNewCurrentBalance}
+      merchantSettings={merchantSettings}
+    />
+  );
+}
+
+// O componente da página principal que envolve WhatsappPageContent com Suspense
+export default function WhatsappPage() {
+  return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-headline font-bold flex items-center">
@@ -54,14 +67,14 @@ export default function WhatsappPage() {
         </h1>
         <p className="text-muted-foreground">Crie e envie mensagens personalizadas para seus clientes.</p>
       </div>
-      <WhatsappComposer 
-        clients={clients} 
-        initialClient={selectedClient} 
-        initialPurchaseValue={initialPurchaseValue}
-        initialCashbackFromThisPurchase={initialCashbackFromThisPurchase}
-        initialNewCurrentBalance={initialNewCurrentBalance}
-        merchantSettings={merchantSettings} 
-        />
+      <Suspense fallback={
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+          <p className="text-muted-foreground">Carregando dados do cliente...</p>
+        </div>
+      }>
+        <WhatsappPageContent />
+      </Suspense>
     </div>
   );
 }
