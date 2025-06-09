@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from "lucide-react"
 
 const appPages = [
-  { href: "/", label: "Página Inicial (Landing Page Original)" },
+  { href: "/original-landing-page", label: "Página Inicial (Exemplo Landing Page Original)" },
   { href: "/auth/login", label: "Login do Comerciante" },
   { href: "/auth/merchant/register", label: "Cadastro de Comerciante" },
   { href: "/dashboard", label: "Painel Principal (Dashboard)" },
@@ -37,6 +37,7 @@ export default function DevIndexPage() {
             <AlertDescription>
               Esta página é apenas para fins de desenvolvimento e validação.
               Lembre-se de removê-la ou reverter a página inicial antes de implantar a versão final da aplicação ou integrá-la com o backend.
+              A rota principal "/" está atualmente redirecionando para esta página de índice.
             </AlertDescription>
           </Alert>
 
