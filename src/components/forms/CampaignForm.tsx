@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect } from "react"; // Added useEffect import
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -53,6 +54,19 @@ export function CampaignForm({ campaign, onSubmitSuccess }: CampaignFormProps) {
     },
   });
 
+  useEffect(() => {
+    // When the campaign prop changes, reset the form values.
+    // This ensures that when editing, the form populates with the correct campaign data,
+    // and when creating a new one (campaign is null), it resets to initial new campaign state.
+    form.reset({
+      name: campaign?.name || "",
+      startDate: campaign ? parseISO(campaign.startDate) : new Date(),
+      endDate: campaign ? parseISO(campaign.endDate) : new Date(new Date().setDate(new Date().getDate() + 7)),
+      cashbackMultiplier: campaign?.cashbackMultiplier || 1,
+      isActive: campaign?.isActive === undefined ? true : campaign.isActive,
+    });
+  }, [campaign, form]); // form.reset is stable, so 'campaign' is the key dependency. 'form' is included for completeness.
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     const campaignData: Campaign = {
       id: campaign?.id || crypto.randomUUID(), // Keep existing ID or generate new
@@ -63,7 +77,13 @@ export function CampaignForm({ campaign, onSubmitSuccess }: CampaignFormProps) {
       isActive: values.isActive,
     };
     onSubmitSuccess(campaignData);
-    if (!campaign) form.reset(); // Reset if it was a new campaign form
+    if (!campaign) form.reset({ // Reset only if it was a new campaign form, keep values if editing for UX
+        name: "",
+        startDate: new Date(),
+        endDate: new Date(new Date().setDate(new Date().getDate() + 7)),
+        cashbackMultiplier: 1,
+        isActive: true,
+    });
   }
 
   return (
