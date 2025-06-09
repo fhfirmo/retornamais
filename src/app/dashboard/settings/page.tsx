@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { SettingsForm } from "@/components/forms/SettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, UserCog, Gift, CalendarPlus } from "lucide-react";
+import { Settings as SettingsIcon, UserCog, Gift, CalendarPlus, PlusCircle } from "lucide-react";
 import type { MerchantSettings, Campaign, MerchantUser } from "@/types";
 import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
