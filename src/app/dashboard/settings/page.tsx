@@ -6,14 +6,13 @@ import { SettingsForm } from "@/components/forms/SettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings as SettingsIcon, UserCog, Gift, CalendarPlus, PlusCircle } from "lucide-react";
 import type { MerchantSettings, Campaign, MerchantUser } from "@/types";
-import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/constants";
+import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { CampaignForm } from "@/components/forms/CampaignForm"; // Assuming this will be created
-import { CampaignList } from "@/components/lists/CampaignList"; // Assuming this will be created
+import { CampaignForm } from "@/components/forms/CampaignForm";
+import { CampaignList } from "@/components/lists/CampaignList";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data - In a real app, this would be fetched and persisted
-const mockMerchantUser: Omit<MerchantUser, 'id' | 'role' | 'email'> = { // id, role, email would come from auth
+const mockMerchantUser: Omit<MerchantUser, 'id' | 'role' | 'email'> = {
   name: "Loja Exemplo Retorna+",
   cnpjCpf: "00.000.000/0001-00",
 };
@@ -21,6 +20,7 @@ const mockMerchantUser: Omit<MerchantUser, 'id' | 'role' | 'email'> = { // id, r
 const initialSettings: MerchantSettings = {
   cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
   whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
+  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE,
   campaigns: [
     { id: "camp1", name: "Natal Premiado", startDate: "2024-12-01", endDate: "2024-12-25", cashbackMultiplier: 2, isActive: true },
     { id: "camp2", name: "Aniversário da Loja", startDate: "2025-03-10", endDate: "2025-03-17", cashbackMultiplier: 1.5, isActive: false },
@@ -38,9 +38,9 @@ export default function SettingsPage() {
     // Load settings from backend/localStorage in a real app
   }, []);
 
-  const handleSettingsUpdate = (updatedSettings: Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate'>) => {
+  const handleSettingsUpdate = (updatedSettings: Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate' | 'minimumRedemptionValue'>) => {
     setSettings(prev => ({...prev, ...updatedSettings}));
-    toast({ title: "Preferências Salvas!", description: "Cashback e template WhatsApp atualizados."});
+    toast({ title: "Preferências Salvas!", description: "Configurações de cashback, template e mínimo para resgate atualizadas."});
     // Persist to backend
   };
 
@@ -121,7 +121,11 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <SettingsForm 
-            settings={{ cashbackPercentage: settings.cashbackPercentage, whatsappTemplate: settings.whatsappTemplate }} 
+            settings={{ 
+              cashbackPercentage: settings.cashbackPercentage, 
+              whatsappTemplate: settings.whatsappTemplate,
+              minimumRedemptionValue: settings.minimumRedemptionValue 
+            }} 
             onSubmitSuccess={handleSettingsUpdate} 
           />
         </CardContent>

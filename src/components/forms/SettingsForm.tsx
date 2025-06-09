@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from "react"; // Added React import
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { MerchantSettings } from "@/types"; // Only needs a subset for this form
-import { useToast } from "@/hooks/use-toast";
+import type { MerchantSettings } from "@/types";
+import { DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 
 const formSchema = z.object({
   cashbackPercentage: z.coerce
@@ -26,10 +26,13 @@ const formSchema = z.object({
     .min(0, "Porcentagem não pode ser negativa.")
     .max(100, "Porcentagem não pode ser maior que 100."),
   whatsappTemplate: z.string().min(10, "Template da mensagem é muito curto."),
+  minimumRedemptionValue: z.coerce
+    .number()
+    .min(0, "Valor mínimo para resgate não pode ser negativo.")
+    .optional(),
 });
 
-// This form only handles a part of MerchantSettings
-type SettingsSubFormValues = Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate'>;
+type SettingsSubFormValues = Pick<MerchantSettings, 'cashbackPercentage' | 'whatsappTemplate' | 'minimumRedemptionValue'>;
 
 interface SettingsFormProps {
   settings: SettingsSubFormValues;
@@ -37,27 +40,25 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
-  const { toast } = useToast(); // Kept for consistency, though parent page handles toast
-  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       cashbackPercentage: settings.cashbackPercentage,
       whatsappTemplate: settings.whatsappTemplate,
+      minimumRedemptionValue: settings.minimumRedemptionValue === undefined ? DEFAULT_MINIMUM_REDEMPTION_VALUE : settings.minimumRedemptionValue,
     },
   });
 
-  // Watch for external changes to settings props
   React.useEffect(() => {
     form.reset({
       cashbackPercentage: settings.cashbackPercentage,
       whatsappTemplate: settings.whatsappTemplate,
+      minimumRedemptionValue: settings.minimumRedemptionValue === undefined ? DEFAULT_MINIMUM_REDEMPTION_VALUE : settings.minimumRedemptionValue,
     });
   }, [settings, form]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Parent component will handle the actual update and toast
     if (onSubmitSuccess) {
       onSubmitSuccess(values);
     }
@@ -84,6 +85,25 @@ export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
         />
         <FormField
           control={form.control}
+          name="minimumRedemptionValue"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Valor Mínimo para Resgate de Cashback (R$)</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" placeholder="Ex: 10" {...field} 
+                 onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                 value={field.value === undefined ? '' : field.value}
+                />
+              </FormControl>
+              <FormDescription>
+                O saldo mínimo de cashback que o cliente precisa ter para poder resgatar. Deixe 0 ou vazio se não houver mínimo.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="whatsappTemplate"
           render={({ field }) => (
             <FormItem>
@@ -97,8 +117,7 @@ export function SettingsForm({ settings, onSubmitSuccess }: SettingsFormProps) {
                 />
               </FormControl>
               <FormDescription>
-                Este template será usado como base para gerar mensagens. Use as chaves:
-                {" {{{clientName}}}, {{{purchaseValue}}}, {{{accumulatedCashback}}}, {{{currentBalance}}}."}
+                Use as chaves: {"{{{clientName}}}, {{{purchaseValue}}}, {{{cashbackFromThisPurchase}}}, {{{newCurrentBalance}}}, {{{redemptionInfo}}}."}
               </FormDescription>
               <FormMessage />
             </FormItem>

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, ShoppingCart, Search, CalendarDays } from "lucide-react";
 import type { Client, Sale, MerchantSettings } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_CASHBACK_PERCENTAGE } from "@/lib/constants";
+import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +39,8 @@ const initialSales: Sale[] = [
 
 const initialSettings: MerchantSettings = {
   cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
-  whatsappTemplate: "Olá {{{clientName}}}, obrigado pela sua compra de R${{{purchaseValue}}}!",
+  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
+  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE,
 };
 
 const ALL_CLIENTS_FILTER_VALUE = "__ALL_CLIENTS__";
@@ -54,16 +55,17 @@ export default function SalesPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [filterClientId, setFilterClientId] = useState<string>(""); // Empty string means all clients
-  const [filterDate, setFilterDate] = useState<string>(""); // YYYY-MM-DD
+  const [filterClientId, setFilterClientId] = useState<string>(""); 
+  const [filterDate, setFilterDate] = useState<string>(""); 
 
   useEffect(() => {
     // Simulate fetching data
+    // In a real app, fetch settings as well
   }, []);
 
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
-      const clientMatch = filterClientId ? sale.clientId === filterClientId : true; // "" means all
+      const clientMatch = filterClientId ? sale.clientId === filterClientId : true;
       const dateMatch = filterDate ? sale.date.startsWith(filterDate) : true;
       return clientMatch && dateMatch;
     });
@@ -76,14 +78,18 @@ export default function SalesPage() {
     } else {
       setSales([sale, ...sales]); 
       toast({ title: "Venda Adicionada", description: `Venda para ${sale.clientName} adicionada.`});
-      // Redirect to WhatsApp message composer (simulation)
-      toast({
-        title: "Redirecionando",
-        description: `Preparando mensagem WhatsApp para ${sale.clientName}...`,
-        duration: 3000,
-      });
-      // In a real app, you might pass more sale details or client details
-      setTimeout(() => router.push(`/dashboard/whatsapp?clientId=${sale.clientId}&purchaseValue=${sale.value}&cashbackGenerated=${sale.cashbackGenerated}`), 1000);
+      
+      if (updatedClient) {
+        toast({
+          title: "Redirecionando",
+          description: `Preparando mensagem WhatsApp para ${sale.clientName}...`,
+          duration: 3000,
+        });
+        // Pass relevant info for WhatsApp message generation
+        setTimeout(() => router.push(
+          `/dashboard/whatsapp?clientId=${sale.clientId}&purchaseValue=${sale.value}&cashbackFromThisPurchase=${sale.cashbackGenerated}&newCurrentBalance=${updatedClient.currentBalance}`
+        ), 1000);
+      }
     }
 
     if (updatedClient) {
@@ -107,12 +113,11 @@ export default function SalesPage() {
     if (saleToDelete) {
       const saleBeingDeleted = sales.find(s => s.id === saleToDelete);
       if(saleBeingDeleted) {
-        // Basic mock logic: revert cashback for deleted sale. Real app needs robust transaction handling.
         const client = clients.find(c => c.id === saleBeingDeleted.clientId);
         if (client) {
             const updatedClient = {
                 ...client,
-                accumulatedCashback: client.accumulatedCashback - saleBeingDeleted.cashbackGenerated,
+                accumulatedCashback: client.accumulatedCashback - saleBeingDeleted.cashbackGenerated, // Assuming accumulatedCashback tracks total ever earned
                 currentBalance: client.currentBalance - saleBeingDeleted.cashbackGenerated
             };
             setClients(prevClients => prevClients.map(c => c.id === updatedClient.id ? updatedClient : c));
@@ -223,4 +228,3 @@ export default function SalesPage() {
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 "use server";
 
 import { generateWhatsappMessage as generateWhatsappMessageFlow, type GenerateWhatsappMessageInput } from "@/ai/flows/generate-whatsapp-message";
@@ -7,8 +8,9 @@ const GenerateMessageActionInputSchema = z.object({
   clientName: z.string(),
   phoneNumber: z.string(),
   purchaseValue: z.number(),
-  accumulatedCashback: z.number(),
-  currentBalance: z.number(),
+  cashbackFromThisPurchase: z.number(),
+  newCurrentBalance: z.number(),
+  minimumRedemptionValue: z.number().optional(),
   template: z.string(),
 });
 
@@ -19,16 +21,21 @@ export async function generateWhatsappMessageAction(
   const validatedInput = GenerateMessageActionInputSchema.safeParse(input);
 
   if (!validatedInput.success) {
-    return { success: false, error: "Invalid input: " + validatedInput.error.flatten().fieldErrors };
+    // Construct a more detailed error message from Zod's error object
+    const errorMessages = Object.entries(validatedInput.error.flatten().fieldErrors)
+      .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+      .join('; ');
+    return { success: false, error: "Invalid input: " + errorMessages };
   }
   
   try {
     const aiInput: GenerateWhatsappMessageInput = {
       clientName: validatedInput.data.clientName,
-      phoneNumber: validatedInput.data.phoneNumber, // Not directly used by current AI prompt template, but good to have
+      phoneNumber: validatedInput.data.phoneNumber,
       purchaseValue: validatedInput.data.purchaseValue,
-      accumulatedCashback: validatedInput.data.accumulatedCashback,
-      currentBalance: validatedInput.data.currentBalance,
+      cashbackFromThisPurchase: validatedInput.data.cashbackFromThisPurchase,
+      newCurrentBalance: validatedInput.data.newCurrentBalance,
+      minimumRedemptionValue: validatedInput.data.minimumRedemptionValue,
       template: validatedInput.data.template,
     };
 
@@ -40,6 +47,10 @@ export async function generateWhatsappMessageAction(
     }
   } catch (error) {
     console.error("Error generating WhatsApp message:", error);
-    return { success: false, error: "An unexpected error occurred." };
+    let errorMessage = "An unexpected error occurred.";
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
   }
 }

@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Copy, Send, SendHorizonal } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { Client } from "@/types";
+import type { Client, MerchantSettings } from "@/types";
 import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/constants";
 import { generateWhatsappMessageAction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -27,10 +27,11 @@ import { useToast } from "@/hooks/use-toast";
 const formSchema = z.object({
   clientId: z.string().optional(),
   clientName: z.string().min(1, "Nome do cliente é obrigatório."),
-  phoneNumber: z.string().min(10, "Número de telefone inválido."),
+  phoneNumber: z.string().min(10, "Número de telefone inválido (ex: 5511999999999).").regex(/^\d+$/, "Telefone deve conter apenas números."),
   purchaseValue: z.coerce.number().positive("Valor da compra deve ser positivo."),
-  accumulatedCashback: z.coerce.number().min(0, "Cashback acumulado não pode ser negativo."),
-  currentBalance: z.coerce.number().min(0, "Saldo atual não pode ser negativo."),
+  cashbackFromThisPurchase: z.coerce.number().min(0, "Cashback desta compra não pode ser negativo."),
+  newCurrentBalance: z.coerce.number().min(0, "Novo saldo atual não pode ser negativo."),
+  minimumRedemptionValue: z.coerce.number().min(0, "Valor mínimo para resgate não pode ser negativo.").optional(),
   template: z.string().min(10, "Template da mensagem é muito curto."),
 });
 
@@ -38,12 +39,21 @@ type WhatsappFormValues = z.infer<typeof formSchema>;
 
 interface WhatsappComposerProps {
   clients: Client[];
+  merchantSettings: MerchantSettings;
   initialClient?: Client | null;
   initialPurchaseValue?: number;
-  initialCashbackGenerated?: number; // Though not directly in default template, useful if template is changed
+  initialCashbackFromThisPurchase?: number;
+  initialNewCurrentBalance?: number;
 }
 
-export function WhatsappComposer({ clients, initialClient, initialPurchaseValue, initialCashbackGenerated }: WhatsappComposerProps) {
+export function WhatsappComposer({ 
+  clients, 
+  merchantSettings,
+  initialClient, 
+  initialPurchaseValue, 
+  initialCashbackFromThisPurchase,
+  initialNewCurrentBalance 
+}: WhatsappComposerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedMessage, setGeneratedMessage] = useState<string | null>(null);
   const { toast } = useToast();
@@ -55,25 +65,25 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
       clientName: initialClient?.name || "",
       phoneNumber: initialClient?.phone || "",
       purchaseValue: initialPurchaseValue || 0,
-      accumulatedCashback: initialClient?.accumulatedCashback || 0, // This should be total accumulated, not from single purchase
-      currentBalance: initialClient?.currentBalance || 0,
-      template: DEFAULT_WHATSAPP_TEMPLATE,
+      cashbackFromThisPurchase: initialCashbackFromThisPurchase || 0,
+      newCurrentBalance: initialNewCurrentBalance || initialClient?.currentBalance || 0,
+      minimumRedemptionValue: merchantSettings.minimumRedemptionValue,
+      template: merchantSettings.whatsappTemplate || DEFAULT_WHATSAPP_TEMPLATE,
     },
   });
 
   useEffect(() => {
-    // This effect ensures that if initialClient or initialPurchaseValue changes (e.g., from query params),
-    // the form is reset with these new values.
     form.reset({
       clientId: initialClient?.id || "",
       clientName: initialClient?.name || "",
       phoneNumber: initialClient?.phone || "",
-      purchaseValue: initialPurchaseValue !== undefined ? initialPurchaseValue : (initialClient ? 0 : 0), // Use initialPurchaseValue if provided
-      accumulatedCashback: initialClient?.accumulatedCashback || 0,
-      currentBalance: initialClient?.currentBalance || 0,
-      template: DEFAULT_WHATSAPP_TEMPLATE,
+      purchaseValue: initialPurchaseValue !== undefined ? initialPurchaseValue : (initialClient ? 0 : 0),
+      cashbackFromThisPurchase: initialCashbackFromThisPurchase !== undefined ? initialCashbackFromThisPurchase : 0,
+      newCurrentBalance: initialNewCurrentBalance !== undefined ? initialNewCurrentBalance : (initialClient?.currentBalance || 0),
+      minimumRedemptionValue: merchantSettings.minimumRedemptionValue,
+      template: merchantSettings.whatsappTemplate || DEFAULT_WHATSAPP_TEMPLATE,
     });
-  }, [initialClient, initialPurchaseValue, form]);
+  }, [initialClient, initialPurchaseValue, initialCashbackFromThisPurchase, initialNewCurrentBalance, merchantSettings, form]);
 
   const handleClientSelection = (clientId: string) => {
     const selected = clients.find(c => c.id === clientId);
@@ -81,18 +91,27 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
       form.setValue("clientId", selected.id); 
       form.setValue("clientName", selected.name);
       form.setValue("phoneNumber", selected.phone);
-      form.setValue("accumulatedCashback", selected.accumulatedCashback);
-      form.setValue("currentBalance", selected.currentBalance);
-      // Reset purchase value if a client is selected manually, unless it was pre-filled
+      // When a client is selected, their currentBalance is their newCurrentBalance *before* any new purchase
+      form.setValue("newCurrentBalance", selected.currentBalance); 
+      // Reset purchase-specific fields if a client is selected manually,
+      // unless they were pre-filled from another page (e.g. sales)
       if(initialPurchaseValue === undefined) form.setValue("purchaseValue", 0); 
+      if(initialCashbackFromThisPurchase === undefined) form.setValue("cashbackFromThisPurchase", 0);
     }
   }
 
   async function onSubmit(values: WhatsappFormValues) {
     setIsLoading(true);
     setGeneratedMessage(null);
+
+    // Ensure minimumRedemptionValue is either a number or undefined (not null)
+    const submissionValues = {
+      ...values,
+      minimumRedemptionValue: values.minimumRedemptionValue === null ? undefined : values.minimumRedemptionValue,
+    };
+
     try {
-      const result = await generateWhatsappMessageAction(values);
+      const result = await generateWhatsappMessageAction(submissionValues);
       if (result.success && result.message) {
         setGeneratedMessage(result.message);
         toast({ title: "Mensagem Gerada!", description: "Sua mensagem personalizada está pronta." });
@@ -100,6 +119,7 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
         toast({ title: "Erro ao Gerar Mensagem", description: result.error || "Tente novamente.", variant: "destructive" });
       }
     } catch (error) {
+      console.error("Error in WhatsappComposer onSubmit:", error);
       toast({ title: "Erro Inesperado", description: "Ocorreu um problema.", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -117,14 +137,12 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
     if (generatedMessage && form.getValues("phoneNumber")) {
       const phone = form.getValues("phoneNumber").replace(/\D/g, '');
       const text = encodeURIComponent(generatedMessage);
-      // Ensure BR country code if not present. This is a simple check.
       const whatsappUrl = `https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${text}`;
       window.open(whatsappUrl, "_blank");
     }
   }
 
   const sendViaSystem = () => {
-    // Placeholder for actual system sending logic
     if (generatedMessage && form.getValues("phoneNumber")) {
         toast({
             title: "Simulação de Envio",
@@ -143,7 +161,6 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
         });
     }
   }
-
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -205,24 +222,24 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="accumulatedCashback" render={({ field }) => (
+                <FormField control={form.control} name="cashbackFromThisPurchase" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cashback Acumulado (R$)</FormLabel>
+                      <FormLabel>Cashback Desta Compra (R$)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="currentBalance" render={({ field }) => (
+                <FormField control={form.control} name="newCurrentBalance" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Saldo Atual (R$)</FormLabel>
+                      <FormLabel>Novo Saldo de Cashback (R$)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
+              {/* minimumRedemptionValue is taken from merchantSettings and passed to the action, not a direct form field for user */}
               <FormField
                 control={form.control}
                 name="template"
@@ -234,7 +251,7 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
                     </FormControl>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
-                      Use: {"{{{clientName}}}, {{{purchaseValue}}}, {{{accumulatedCashback}}}, {{{currentBalance}}}"}
+                      Use: {"{{{clientName}}}, {{{purchaseValue}}}, {{{cashbackFromThisPurchase}}}, {{{newCurrentBalance}}}, {{{redemptionInfo}}}"}
                     </p>
                   </FormItem>
                 )}
@@ -248,7 +265,7 @@ export function WhatsappComposer({ clients, initialClient, initialPurchaseValue,
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg sticky top-20"> {/* Adjust top value if header height changes */}
+      <Card className="shadow-lg sticky top-20">
         <CardHeader>
           <CardTitle className="font-headline">Mensagem Gerada</CardTitle>
           <CardDescription>Revise a mensagem antes de enviar.</CardDescription>

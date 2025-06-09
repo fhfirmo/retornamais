@@ -3,9 +3,10 @@
 
 import { WhatsappComposer } from "@/components/dashboard/WhatsappComposer";
 import { MessageSquare } from "lucide-react";
-import type { Client } from "@/types";
+import type { Client, MerchantSettings } from "@/types";
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
+import { DEFAULT_CASHBACK_PERCENTAGE, DEFAULT_WHATSAPP_TEMPLATE, DEFAULT_MINIMUM_REDEMPTION_VALUE } from "@/lib/constants";
 
 // Mock Data - In a real app, this would come from an API or context
 const initialClients: Client[] = [
@@ -14,21 +15,34 @@ const initialClients: Client[] = [
   { id: "3", name: "Carlos Dias", phone: "5531977770003", accumulatedCashback: 0, currentBalance: 0, cashbackRedeemed: 0 },
 ];
 
+// Mock settings for the merchant
+const mockMerchantSettings: MerchantSettings = {
+  cashbackPercentage: DEFAULT_CASHBACK_PERCENTAGE,
+  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
+  minimumRedemptionValue: DEFAULT_MINIMUM_REDEMPTION_VALUE, 
+  campaigns: [], // Assuming no active campaigns for simplicity here
+};
+
 
 export default function WhatsappPage() {
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [merchantSettings, setMerchantSettings] = useState<MerchantSettings>(mockMerchantSettings);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const searchParams = useSearchParams();
 
-  // For pre-filling from sales page redirect
   const [initialPurchaseValue, setInitialPurchaseValue] = useState<number | undefined>(undefined);
-  const [initialCashbackGenerated, setInitialCashbackGenerated] = useState<number | undefined>(undefined);
+  const [initialCashbackFromThisPurchase, setInitialCashbackFromThisPurchase] = useState<number | undefined>(undefined);
+  const [initialNewCurrentBalance, setInitialNewCurrentBalance] = useState<number | undefined>(undefined);
 
 
   useEffect(() => {
+    // In a real app, fetch merchantSettings
+    // setMerchantSettings(fetchedSettings);
+
     const clientId = searchParams.get('clientId');
     const purchaseValueParam = searchParams.get('purchaseValue');
-    const cashbackGeneratedParam = searchParams.get('cashbackGenerated');
+    const cashbackFromThisPurchaseParam = searchParams.get('cashbackFromThisPurchase');
+    const newCurrentBalanceParam = searchParams.get('newCurrentBalance');
 
     if (clientId) {
       const client = initialClients.find(c => c.id === clientId);
@@ -37,8 +51,11 @@ export default function WhatsappPage() {
     if (purchaseValueParam) {
         setInitialPurchaseValue(parseFloat(purchaseValueParam));
     }
-    if (cashbackGeneratedParam) {
-        setInitialCashbackGenerated(parseFloat(cashbackGeneratedParam));
+    if (cashbackFromThisPurchaseParam) {
+        setInitialCashbackFromThisPurchase(parseFloat(cashbackFromThisPurchaseParam));
+    }
+    if (newCurrentBalanceParam) {
+        setInitialNewCurrentBalance(parseFloat(newCurrentBalanceParam));
     }
 
   }, [searchParams]);
@@ -57,7 +74,9 @@ export default function WhatsappPage() {
         clients={clients} 
         initialClient={selectedClient} 
         initialPurchaseValue={initialPurchaseValue}
-        initialCashbackGenerated={initialCashbackGenerated} // Though cashback generated isn't directly in template, purchaseValue is.
+        initialCashbackFromThisPurchase={initialCashbackFromThisPurchase}
+        initialNewCurrentBalance={initialNewCurrentBalance}
+        merchantSettings={merchantSettings} // Pass the full settings object
         />
     </div>
   );

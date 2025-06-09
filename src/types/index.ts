@@ -21,19 +21,19 @@ export interface Client {
   merchantId?: string; // To associate client with a specific merchant if needed in a multi-tenant admin view
   name: string;
   phone: string; // WhatsApp number
-  accumulatedCashback: number;
-  currentBalance: number;
-  cashbackRedeemed?: number; // New field
+  accumulatedCashback: number; // Total cashback ever earned by this client
+  currentBalance: number; // Current spendable cashback balance
+  cashbackRedeemed?: number;
 }
 
 export interface Sale {
   id:string;
   merchantId?: string; // To associate sale with a specific merchant
   clientId: string;
-  clientName: string; 
+  clientName: string;
   value: number;
   date: string; // ISO string for simplicity, or Date object
-  cashbackGenerated: number;
+  cashbackGenerated: number; // Cashback generated from this specific sale
 }
 
 export interface Campaign {
@@ -48,6 +48,7 @@ export interface Campaign {
 export interface MerchantSettings {
   cashbackPercentage: number;
   whatsappTemplate: string;
+  minimumRedemptionValue?: number; // Minimum cashback balance to be able to redeem
   campaigns?: Campaign[]; // List of campaigns
 }
 
