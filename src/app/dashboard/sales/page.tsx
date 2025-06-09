@@ -42,6 +42,8 @@ const initialSettings: MerchantSettings = {
   whatsappTemplate: "Olá {{{clientName}}}, obrigado pela sua compra de R${{{purchaseValue}}}!",
 };
 
+const ALL_CLIENTS_FILTER_VALUE = "__ALL_CLIENTS__";
+
 export default function SalesPage() {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [sales, setSales] = useState<Sale[]>(initialSales);
@@ -52,7 +54,7 @@ export default function SalesPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [filterClientId, setFilterClientId] = useState<string>("");
+  const [filterClientId, setFilterClientId] = useState<string>(""); // Empty string means all clients
   const [filterDate, setFilterDate] = useState<string>(""); // YYYY-MM-DD
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function SalesPage() {
 
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
-      const clientMatch = filterClientId ? sale.clientId === filterClientId : true;
+      const clientMatch = filterClientId ? sale.clientId === filterClientId : true; // "" means all
       const dateMatch = filterDate ? sale.date.startsWith(filterDate) : true;
       return clientMatch && dateMatch;
     });
@@ -168,12 +170,15 @@ export default function SalesPage() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
             <div>
               <label htmlFor="clientFilter" className="block text-sm font-medium text-muted-foreground mb-1">Filtrar por Cliente</label>
-              <Select onValueChange={setFilterClientId} value={filterClientId}>
+              <Select 
+                onValueChange={(value) => setFilterClientId(value === ALL_CLIENTS_FILTER_VALUE ? "" : value)} 
+                value={filterClientId === "" ? ALL_CLIENTS_FILTER_VALUE : filterClientId}
+              >
                 <SelectTrigger id="clientFilter">
                   <SelectValue placeholder="Todos os Clientes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os Clientes</SelectItem>
+                  <SelectItem value={ALL_CLIENTS_FILTER_VALUE}>Todos os Clientes</SelectItem>
                   {clients.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -218,3 +223,4 @@ export default function SalesPage() {
     </div>
   );
 }
+
